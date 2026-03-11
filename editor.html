@@ -1600,8 +1600,37 @@
           html += `<div class="property-section"><div class="property-label">结局类型：</div><select class="property-select" onchange="updateNodeData('endingType', this.value)"><option value="good" ${node.data.endingType === 'good' ? 'selected' : ''}>好结局</option><option value="normal" ${node.data.endingType === 'normal' ? 'selected' : ''}>普通结局</option><option value="bad" ${node.data.endingType === 'bad' ? 'selected' : ''}>坏结局</option></select></div>`;
           break;
       }
-      html += `<div class="property-section"><button class="btn btn-delete" style="width:100%" onclick="showDeleteNodeModal('${node.id}')">删除节点</button></div>`;
+      html += `<div class="property-section" style="display:flex;gap:10px;">
+        <button class="btn btn-assets" style="flex:1" onclick="duplicateNode('${node.id}')">复制节点</button>
+        <button class="btn btn-delete" style="flex:1" onclick="showDeleteNodeModal('${node.id}')">删除节点</button>
+      </div>`;
       panel.innerHTML = html;
+    }
+
+    function duplicateNode(nodeId) {
+      const originalNode = getCurrentNodes().find(n => n.id === nodeId);
+      if (!originalNode) return;
+      
+      const newId = originalNode.type + '_' + (state.nodeIdCounter++);
+      const newNode = JSON.parse(JSON.stringify(originalNode));
+      newNode.id = newId;
+      newNode.x += 30;
+      newNode.y += 30;
+      
+      // Reset connections for the new node to avoid confusion, or keep them?
+      // Keeping outgoing connections (goto) might be useful.
+      // Incoming connections should NOT be copied (obviously).
+      
+      // For choice nodes, we need to generate new IDs for choices? No, choices don't have IDs, just index.
+      // But if choices have 'goto', they will point to the SAME targets as original. This is usually desired.
+      
+      getCurrentNodes().push(newNode);
+      renderNode(newNode);
+      updateConnections(); // Ensure connections are drawn for the copied node
+      selectNode(newId);
+      saveData();
+      updateChapterInfo();
+      renderChapterList();
     }
 
     function setAsStartNode(nodeId, isStart) {
