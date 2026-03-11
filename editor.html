@@ -102,6 +102,20 @@
       z-index: 10;
     }
 
+    .left-panel.collapsed {
+      width: 48px;
+      overflow: hidden;
+    }
+
+    .left-panel.collapsed .chapter-content {
+      display: none;
+    }
+
+    .left-panel.collapsed .panel-title-row {
+      justify-content: center;
+      padding: 10px 0;
+    }
+
     .panel-title {
       padding: 15px;
       font-size: 14px;
@@ -111,6 +125,34 @@
       font-family: var(--sdv-font-family);
       text-align: center;
       background-color: var(--sdv-primary-light);
+    }
+
+    .panel-title-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 10px 12px;
+      text-align: left;
+    }
+
+    .panel-toggle {
+      width: 32px;
+      height: 32px;
+      padding: 0;
+      border: 3px solid var(--sdv-border-outline);
+      background-color: var(--sdv-bg-panel);
+      color: var(--sdv-text-dark);
+      cursor: pointer;
+      font-family: var(--sdv-font-family);
+      font-size: 14px;
+      font-weight: bold;
+      box-shadow: 2px 2px 0 rgba(0,0,0,0.25);
+    }
+
+    .panel-toggle:active {
+      transform: translate(2px, 2px);
+      box-shadow: none;
     }
 
     .chapter-list {
@@ -389,6 +431,20 @@
       box-shadow: -4px 0 0 rgba(0,0,0,0.2);
       z-index: 10;
       overflow-y: auto;
+    }
+
+    .right-panel.collapsed {
+      width: 48px;
+      overflow: hidden;
+    }
+
+    .right-panel.collapsed #propertyContent {
+      display: none;
+    }
+
+    .right-panel.collapsed .panel-title-row {
+      justify-content: center;
+      padding: 10px 0;
     }
     
     .empty-state {
@@ -784,10 +840,15 @@
   </div>
 
   <div class="editor-container">
-    <div class="left-panel">
-      <div class="panel-title">章节列表</div>
-      <div class="chapter-list" id="chapterList"></div>
-      <button class="btn btn-add add-chapter-btn" onclick="showAddChapterModal()">+ 添加章节</button>
+    <div class="left-panel" id="leftPanel">
+      <div class="panel-title panel-title-row">
+        <span>章节列表</span>
+        <button class="panel-toggle" id="toggleLeftPanel" type="button" title="折叠/展开">⟨</button>
+      </div>
+      <div class="chapter-content" id="chapterContent">
+        <div class="chapter-list" id="chapterList"></div>
+        <button class="btn btn-add add-chapter-btn" onclick="showAddChapterModal()">+ 添加章节</button>
+      </div>
     </div>
 
     <div class="canvas-area">
@@ -811,10 +872,15 @@
     </div>
 
     <div class="right-panel" id="propertyPanel">
-      <div class="panel-title">属性编辑</div>
-      <div class="empty-state">
-        <div class="icon">📝</div>
-        选择一个节点进行编辑
+      <div class="panel-title panel-title-row">
+        <span>属性编辑</span>
+        <button class="panel-toggle" id="toggleRightPanel" type="button" title="折叠/展开">⟩</button>
+      </div>
+      <div id="propertyContent">
+        <div class="empty-state">
+          <div class="icon">📝</div>
+          选择一个节点进行编辑
+        </div>
       </div>
     </div>
   </div>
@@ -949,6 +1015,40 @@
       document.addEventListener('mouseup', handleGlobalMouseUp);
       
       initCanvasPanning();
+      initPanelToggles();
+    }
+
+    function initPanelToggles() {
+      const leftPanel = document.getElementById('leftPanel');
+      const rightPanel = document.getElementById('propertyPanel');
+      const leftBtn = document.getElementById('toggleLeftPanel');
+      const rightBtn = document.getElementById('toggleRightPanel');
+      if (!leftPanel || !rightPanel || !leftBtn || !rightBtn) return;
+
+      const leftCollapsed = localStorage.getItem('editor_left_collapsed') === '1';
+      const rightCollapsed = localStorage.getItem('editor_right_collapsed') === '1';
+      if (leftCollapsed) leftPanel.classList.add('collapsed');
+      if (rightCollapsed) rightPanel.classList.add('collapsed');
+      updatePanelToggleLabels();
+
+      leftBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        leftPanel.classList.toggle('collapsed');
+        localStorage.setItem('editor_left_collapsed', leftPanel.classList.contains('collapsed') ? '1' : '0');
+        updatePanelToggleLabels();
+      });
+
+      rightBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        rightPanel.classList.toggle('collapsed');
+        localStorage.setItem('editor_right_collapsed', rightPanel.classList.contains('collapsed') ? '1' : '0');
+        updatePanelToggleLabels();
+      });
+
+      function updatePanelToggleLabels() {
+        leftBtn.textContent = leftPanel.classList.contains('collapsed') ? '⟩' : '⟨';
+        rightBtn.textContent = rightPanel.classList.contains('collapsed') ? '⟨' : '⟩';
+      }
     }
     
     function initCanvasPanning() {
@@ -1555,17 +1655,19 @@
     }
     
     function clearPropertyPanel() {
-      document.getElementById('propertyPanel').innerHTML = `<div class="panel-title">属性编辑</div><div class="empty-state"><div class="icon">📝</div>选择一个节点进行编辑</div>`;
+      const content = document.getElementById('propertyContent');
+      if (!content) return;
+      content.innerHTML = `<div class="empty-state"><div class="icon">📝</div>选择一个节点进行编辑</div>`;
     }
 
     function renderPropertyPanel(node) {
-      const panel = document.getElementById('propertyPanel');
+      const panel = document.getElementById('propertyContent');
+      if (!panel) return;
       const nodes = getCurrentNodes();
       const chapter = state.chapters.find(c => c.id === state.currentChapterId);
       const isStartNode = chapter && chapter.startNode === node.id;
       
-      let html = '<div class="panel-title">属性编辑</div>';
-      html += `<div class="property-section"><div class="property-label">节点 ID：</div><input class="property-input" value="${node.id}" onchange="updateNodeId(this.value)"></div>`;
+      let html = `<div class="property-section"><div class="property-label">节点 ID：</div><input class="property-input" value="${node.id}" onchange="updateNodeId(this.value)"></div>`;
       if (node.type !== 'ending') {
         html += `<div class="property-section"><label style="display:flex;align-items:center;gap:8px;cursor:pointer;"><input type="checkbox" ${isStartNode ? 'checked' : ''} onchange="setAsStartNode('${node.id}', this.checked)"><span>设为章节起始节点</span></label></div>`;
       }
@@ -1617,16 +1719,9 @@
       newNode.x += 30;
       newNode.y += 30;
       
-      // Reset connections for the new node to avoid confusion, or keep them?
-      // Keeping outgoing connections (goto) might be useful.
-      // Incoming connections should NOT be copied (obviously).
-      
-      // For choice nodes, we need to generate new IDs for choices? No, choices don't have IDs, just index.
-      // But if choices have 'goto', they will point to the SAME targets as original. This is usually desired.
-      
       getCurrentNodes().push(newNode);
       renderNode(newNode);
-      updateConnections(); // Ensure connections are drawn for the copied node
+      updateConnections();
       selectNode(newId);
       saveData();
       updateChapterInfo();
@@ -1635,7 +1730,13 @@
 
     function setAsStartNode(nodeId, isStart) {
       const chapter = state.chapters.find(c => c.id === state.currentChapterId);
-      if (chapter) { chapter.startNode = isStart ? nodeId : null; clearCanvas(); loadChapterNodes(state.currentChapterId); renderPropertyPanel(state.selectedNode); scheduleSave(); }
+      if (!chapter) return;
+      chapter.startNode = isStart ? nodeId : null;
+      clearCanvas();
+      loadChapterNodes(state.currentChapterId);
+      if (state.selectedNode) renderPropertyPanel(state.selectedNode);
+      else clearPropertyPanel();
+      scheduleSave();
     }
 
     function updateNodeId(newId) {

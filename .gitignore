@@ -5,6 +5,9 @@ out/
 dist/
 build/
 
+private/*
+!private/.gitignore
+
 __pycache__/
 *.py[cod]
 *$py.class
