@@ -627,6 +627,29 @@
       padding: 20px;
       background-color: #fff8e1;
       overflow-y: auto;
+      display: block;
+    }
+
+    .asset-section {
+      margin-bottom: 18px;
+    }
+
+    .asset-section-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 10px;
+      margin-bottom: 10px;
+      background-color: var(--sdv-bg-panel);
+      border: 3px solid var(--sdv-border-outline);
+      color: var(--sdv-text-dark);
+      font-family: var(--sdv-font-family);
+      font-size: 12px;
+      font-weight: bold;
+      box-shadow: 3px 3px 0 rgba(0,0,0,0.2);
+    }
+
+    .asset-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
       gap: 15px;
@@ -832,7 +855,7 @@
   <div class="top-bar">
     <h1>可视化剧情编辑器 v0.5.1</h1>
     <div class="top-bar-buttons">
-      <button class="btn btn-assets" onclick="showAssetModal()">资源库</button>
+      <button class="btn btn-assets" onclick="showAssetModal('all')">资源库</button>
       <button class="btn btn-preview" onclick="previewStory()">预览</button>
       <button class="btn btn-export" onclick="exportStory()">导出</button>
       <button class="btn btn-back" onclick="goBack()">返回</button>
@@ -929,7 +952,7 @@
         <div class="asset-left">
           <div class="asset-field">
             <label>资源类型</label>
-            <select id="assetTypeSelect" onchange="setAssetFilter(this.value)">
+            <select id="assetTypeSelect">
               <option value="background">背景</option>
               <option value="character">角色</option>
               <option value="prop">道具</option>
@@ -957,7 +980,12 @@
         </div>
         
         <div class="asset-right">
-          <div class="property-label" style="margin:0;">资源列表</div>
+          <div class="asset-tabs" style="padding: 10px 0 0; background-color: transparent; border-bottom: none;">
+            <div class="asset-tab" data-type="all" onclick="setAssetView('all')">全部</div>
+            <div class="asset-tab" data-type="background" onclick="setAssetView('background')">场景</div>
+            <div class="asset-tab" data-type="character" onclick="setAssetView('character')">角色</div>
+            <div class="asset-tab" data-type="prop" onclick="setAssetView('prop')">道具</div>
+          </div>
           <div class="asset-list" id="assetList"></div>
         </div>
       </div>
@@ -998,7 +1026,7 @@
     
     let saveTimer = null;
     let assets = [];
-    let assetFilterType = 'background';
+    let assetViewType = 'all';
     let assetSaveTimer = null;
 
     function init() {
@@ -1156,9 +1184,28 @@
     }
     function saveAssets() { localStorage.setItem('assets_v1', JSON.stringify(assets)); }
     function scheduleAssetsSave() { if (assetSaveTimer) clearTimeout(assetSaveTimer); assetSaveTimer = setTimeout(saveAssets, 300); }
-    function showAssetModal() { loadAssets(); document.getElementById('assetModal').classList.remove('hidden'); document.getElementById('assetTypeSelect').value = assetFilterType; renderAssetList(); }
+    function showAssetModal(viewType) {
+      loadAssets();
+      assetViewType = viewType || 'all';
+      document.getElementById('assetModal').classList.remove('hidden');
+      updateAssetTabs();
+      renderAssetList();
+    }
     function hideAssetModal() { document.getElementById('assetModal').classList.add('hidden'); }
-    function setAssetFilter(type) { assetFilterType = type; renderAssetList(); }
+    function setAssetView(type) {
+      assetViewType = type || 'all';
+      updateAssetTabs();
+      renderAssetList();
+    }
+
+    function updateAssetTabs() {
+      const tabs = document.querySelectorAll('#assetModal .asset-tab');
+      tabs.forEach(t => {
+        const type = t.getAttribute('data-type');
+        if (type === assetViewType) t.classList.add('active');
+        else t.classList.remove('active');
+      });
+    }
     
     async function uploadAsset() {
       const type = document.getElementById('assetTypeSelect').value;
@@ -1207,7 +1254,7 @@
     }
     
     function applyAssetToSelectedNode(assetId) {
-      const asset = assets.find(a => a.id === assetId);
+      const asset = getAllAssets().find(a => a.id === assetId);
       if (!asset || !state.selectedNode) return;
       if (state.selectedNode.type !== 'dialogue') return;
       if (asset.type === 'background') updateNodeData('background', asset.id);
@@ -1217,44 +1264,133 @@
     function renderAssetList() {
       const container = document.getElementById('assetList');
       if (!container) return;
-      const filtered = assets.filter(a => a.type === assetFilterType);
       container.innerHTML = '';
-      filtered.forEach(a => {
-        const card = document.createElement('div');
-        card.className = 'asset-card';
-        card.onclick = () => applyAssetToSelectedNode(a.id);
-        const src = a.url || a.dataUrl || '';
-        card.innerHTML = `<div class="asset-thumb"><img src="${src}" alt="${a.name}"></div><div class="asset-meta"><input value="${escapeHtml(a.name)}" oninput="updateAssetName('${a.id}', this.value)"><div class="asset-actions"><div class="asset-id">${a.id}</div><button class="btn btn-small btn-delete" onclick="event.stopPropagation(); deleteAsset('${a.id}')">删除</button></div></div>`;
-        container.appendChild(card);
+
+      const types = assetViewType === 'all' ? ['background', 'character', 'prop'] : [assetViewType];
+      const typeLabels = { background: '场景', character: '角色', prop: '道具' };
+
+      const sections = [];
+      types.forEach(type => {
+        const list = getAssetsByType(type);
+        if (assetViewType !== 'all' && list.length === 0) return;
+        const cards = list.map(a => buildAssetCardHtml(a)).join('');
+        sections.push(
+          `<div class="asset-section">
+            <div class="asset-section-title"><span>${typeLabels[type] || type}</span><span>${list.length}</span></div>
+            <div class="asset-grid">${cards || '<div class="help-text">暂无资源，先在左侧上传。</div>'}</div>
+          </div>`
+        );
       });
-      if (filtered.length === 0) container.innerHTML = '<div class="help-text">暂无资源，先在左侧上传。</div>';
+
+      container.innerHTML = sections.join('') || '<div class="help-text">暂无资源，先在左侧上传。</div>';
+    }
+
+    function buildAssetCardHtml(a) {
+      const src = a.url || a.dataUrl || '';
+      const thumb = src
+        ? `<div class="asset-thumb"><img src="${src}" alt="${escapeHtml(a.name)}"></div>`
+        : `<div class="asset-thumb"><div style="font-size:10px;color:#333;text-align:center;line-height:1.3;padding:6px;">${escapeHtml(a.name)}</div></div>`;
+
+      const canEdit = !a.builtin;
+      const namePart = canEdit
+        ? `<input value="${escapeHtml(a.name)}" onclick="event.stopPropagation()" oninput="updateAssetName('${a.id}', this.value)">`
+        : `<div class="asset-name">${escapeHtml(a.name)}</div>`;
+
+      const actions = canEdit
+        ? `<button class="btn btn-small btn-delete" onclick="event.stopPropagation(); deleteAsset('${a.id}')">删除</button>`
+        : '';
+
+      return `<div class="asset-card" onclick="applyAssetToSelectedNode('${a.id}')">
+        ${thumb}
+        <div class="asset-meta">
+          ${namePart}
+          <div class="asset-actions">
+            <div class="asset-id">${escapeHtml(a.id)}</div>
+            ${actions}
+          </div>
+        </div>
+      </div>`;
     }
     
     function escapeHtml(str) { return String(str).replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;').replaceAll("'", '&#39;'); }
-    function getAssetsByType(type) { return assets.filter(a => a.type === type); }
+    function getBuiltinAssets() {
+      return [
+        { id: 'bg_street', type: 'background', name: '街道（内置）', builtin: true },
+        { id: 'bg_cafe', type: 'background', name: '咖啡店（内置）', builtin: true },
+        { id: 'bg_park', type: 'background', name: '公园（内置）', builtin: true },
+        { id: 'char_heroine_normal', type: 'character', name: '小雪-默认（内置）', builtin: true },
+        { id: 'char_heroine_happy', type: 'character', name: '小雪-开心（内置）', builtin: true },
+        { id: 'char_heroine_shy', type: 'character', name: '小雪-害羞（内置）', builtin: true }
+      ];
+    }
+
+    function getAllAssets() {
+      return [...getBuiltinAssets(), ...assets];
+    }
+
+    function getAssetsByType(type) {
+      return getAllAssets().filter(a => a.type === type);
+    }
+
+    function getCustomAssetsByType(type) {
+      return assets.filter(a => a.type === type);
+    }
     
     // ... [Reuse Option Builders] ...
     function buildBackgroundOptions(selected) {
       const builtin = [{ value: 'bg_street', label: '街道（内置）' }, { value: 'bg_cafe', label: '咖啡店（内置）' }, { value: 'bg_park', label: '公园（内置）' }];
-      const custom = getAssetsByType('background').map(a => ({ value: a.id, label: `${a.name}（资源库）` }));
+      const custom = getCustomAssetsByType('background').map(a => ({ value: a.id, label: `${a.name}（资源库）` }));
       return `<optgroup label="内置背景">${builtin.map(o => `<option value="${o.value}" ${selected === o.value ? 'selected' : ''}>${o.label}</option>`).join('')}</optgroup>` + 
              `<optgroup label="资源库背景">${custom.map(o => `<option value="${o.value}" ${selected === o.value ? 'selected' : ''}>${escapeHtml(o.label)}</option>`).join('')}</optgroup>`;
     }
     function buildCharacterOptions(selected) {
       const builtin = [{ value: 'null', label: '无角色（内置）' }, { value: 'char_heroine_normal', label: '小雪-默认（内置）' }, { value: 'char_heroine_happy', label: '小雪-开心（内置）' }, { value: 'char_heroine_shy', label: '小雪-害羞（内置）' }];
-      const custom = getAssetsByType('character').map(a => ({ value: a.id, label: `${a.name}（资源库）` }));
+      const custom = getCustomAssetsByType('character').map(a => ({ value: a.id, label: `${a.name}（资源库）` }));
       return `<optgroup label="内置角色">${builtin.map(o => `<option value="${o.value}" ${selected === o.value ? 'selected' : ''}>${o.label}</option>`).join('')}</optgroup>` +
              `<optgroup label="资源库角色">${custom.map(o => `<option value="${o.value}" ${selected === o.value ? 'selected' : ''}>${escapeHtml(o.label)}</option>`).join('')}</optgroup>`;
     }
     function buildSpeakerOptions(selected) {
       const builtin = [{ value: '旁白', label: '旁白' }, { value: '???', label: '???' }];
-      const seen = new Set();
-      const custom = getAssetsByType('character').map(a => (a && a.name ? String(a.name).trim() : '')).filter(n => n && !seen.has(n) && (seen.add(n), true)).map(n => ({ value: n, label: n }));
+      const builtinCharacterNames = Array.from(new Set(
+        getBuiltinAssets()
+          .filter(a => a.type === 'character')
+          .map(a => String(a.name || '').split('（')[0].split('-')[0].trim())
+          .filter(Boolean)
+      )).map(n => ({ value: n, label: n }));
+
+      const customCharacterNames = Array.from(new Set(
+        getCustomAssetsByType('character')
+          .map(a => (a && a.name ? String(a.name).trim() : ''))
+          .filter(Boolean)
+      )).map(n => ({ value: n, label: n }));
+
+      const usedSpeakers = new Set();
+      Object.values(state.nodesByChapter || {}).flat().forEach(n => {
+        if (n && n.type === 'dialogue' && n.data && n.data.speaker) {
+          const s = String(n.data.speaker).trim();
+          if (s) usedSpeakers.add(s);
+        }
+      });
+
+      const usedSpeakerOptions = Array.from(usedSpeakers)
+        .filter(s => !builtin.some(b => b.value === s))
+        .filter(s => !builtinCharacterNames.some(c => c.value === s))
+        .filter(s => !customCharacterNames.some(c => c.value === s))
+        .map(s => ({ value: s, label: s }));
+
       const opts = [];
       opts.push(`<option value="" ${!selected ? 'selected' : ''}>-- 选择说话人 --</option>`);
-      if (selected && !new Set([...builtin.map(b=>b.value), ...custom.map(c=>c.value)]).has(selected)) opts.push(`<optgroup label="当前值"><option value="${escapeHtml(selected)}" selected>${escapeHtml(selected)}</option></optgroup>`);
+      const allValues = new Set([
+        ...builtin.map(b => b.value),
+        ...builtinCharacterNames.map(c => c.value),
+        ...customCharacterNames.map(c => c.value),
+        ...usedSpeakerOptions.map(c => c.value)
+      ]);
+      if (selected && !allValues.has(selected)) opts.push(`<optgroup label="当前值"><option value="${escapeHtml(selected)}" selected>${escapeHtml(selected)}</option></optgroup>`);
       opts.push(`<optgroup label="内置">${builtin.map(o => `<option value="${o.value}" ${selected === o.value ? 'selected' : ''}>${o.label}</option>`).join('')}</optgroup>`);
-      opts.push(`<optgroup label="资源库角色名">${custom.map(o => `<option value="${escapeHtml(o.value)}" ${selected === o.value ? 'selected' : ''}>${escapeHtml(o.label)}</option>`).join('')}</optgroup>`);
+      if (builtinCharacterNames.length) opts.push(`<optgroup label="内置角色名">${builtinCharacterNames.map(o => `<option value="${escapeHtml(o.value)}" ${selected === o.value ? 'selected' : ''}>${escapeHtml(o.label)}</option>`).join('')}</optgroup>`);
+      if (customCharacterNames.length) opts.push(`<optgroup label="资源库角色名">${customCharacterNames.map(o => `<option value="${escapeHtml(o.value)}" ${selected === o.value ? 'selected' : ''}>${escapeHtml(o.label)}</option>`).join('')}</optgroup>`);
+      if (usedSpeakerOptions.length) opts.push(`<optgroup label="已使用">${usedSpeakerOptions.map(o => `<option value="${escapeHtml(o.value)}" ${selected === o.value ? 'selected' : ''}>${escapeHtml(o.label)}</option>`).join('')}</optgroup>`);
       return opts.join('');
     }
 
@@ -1678,10 +1814,10 @@
       switch(node.type) {
         case 'dialogue':
           html += `
-            <div class="property-section"><div class="property-label">说话人：</div><div class="goto-selector"><select class="property-select" onchange="updateNodeData('speaker', this.value)">${buildSpeakerOptions(node.data.speaker)}</select><button class="btn btn-connect" onclick="assetFilterType='character'; showAssetModal()">资源</button></div></div>
+            <div class="property-section"><div class="property-label">说话人：</div><div class="goto-selector"><select class="property-select" onchange="updateNodeData('speaker', this.value)">${buildSpeakerOptions(node.data.speaker)}</select><button class="btn btn-connect" onclick="showAssetModal('character')">资源</button></div></div>
             <div class="property-section"><div class="property-label">对话内容：</div><textarea class="property-textarea" oninput="updateNodeData('text', this.value)">${node.data.text}</textarea></div>
-            <div class="property-section"><div class="property-label">背景图片：</div><div class="goto-selector"><select class="property-select" onchange="updateNodeData('background', this.value)">${buildBackgroundOptions(node.data.background)}</select><button class="btn btn-connect" onclick="assetFilterType='background'; showAssetModal()">资源</button></div></div>
-            <div class="property-section"><div class="property-label">角色立绘：</div><div class="goto-selector"><select class="property-select" onchange="updateNodeData('character', this.value)">${buildCharacterOptions(node.data.character)}</select><button class="btn btn-connect" onclick="assetFilterType='character'; showAssetModal()">资源</button></div></div>
+            <div class="property-section"><div class="property-label">背景图片：</div><div class="goto-selector"><select class="property-select" onchange="updateNodeData('background', this.value)">${buildBackgroundOptions(node.data.background)}</select><button class="btn btn-connect" onclick="showAssetModal('background')">资源</button></div></div>
+            <div class="property-section"><div class="property-label">角色立绘：</div><div class="goto-selector"><select class="property-select" onchange="updateNodeData('character', this.value)">${buildCharacterOptions(node.data.character)}</select><button class="btn btn-connect" onclick="showAssetModal('character')">资源</button></div></div>
             <div class="property-section"><div class="property-label">下一个节点：</div><div class="goto-selector"><select class="property-select" onchange="updateNodeData('goto', this.value)"><option value="">-- 无 --</option>${nodes.filter(n => n.id !== node.id).map(n => `<option value="${n.id}" ${node.data.goto === n.id ? 'selected' : ''}>${n.id} (${n.type})</option>`).join('')}</select><button class="btn btn-connect" onclick="startConnection('${node.id}', null)">连接</button></div></div>
           `;
           break;
