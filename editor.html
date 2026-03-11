@@ -1,0 +1,1726 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>可视化剧情编辑器</title>
+  <link rel="stylesheet" href="sdv-theme.css">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: var(--sdv-font-family);
+      background: #1a1a2e;
+      color: #ffffff;
+      overflow: hidden;
+      height: 100vh;
+    }
+
+    .editor-container {
+      display: flex;
+      height: 100vh;
+    }
+
+    .top-bar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 60px;
+      background-color: var(--sdv-primary);
+      border-bottom: 4px solid var(--sdv-border-outline);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 20px;
+      z-index: 100;
+      box-shadow: 0 4px 0 rgba(0,0,0,0.2);
+    }
+
+    .top-bar h1 {
+      font-size: 18px;
+      color: var(--sdv-text-light);
+      font-family: var(--sdv-font-family);
+      text-shadow: 1px 1px 0 rgba(0,0,0,0.3);
+    }
+
+    .top-bar-buttons {
+      display: flex;
+      gap: 10px;
+    }
+
+    .btn {
+      padding: 8px 16px;
+      border: 3px solid var(--sdv-border-outline);
+      border-radius: 0;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: bold;
+      font-family: var(--sdv-font-family);
+      transition: transform 0.1s;
+      box-shadow: 3px 3px 0 rgba(0,0,0,0.3);
+    }
+
+    .btn-preview { background-color: var(--sdv-ui-blue); color: white; }
+    .btn-export { background-color: var(--sdv-success); color: white; }
+    .btn-assets { background-color: var(--sdv-warning); color: var(--sdv-text-dark); }
+    .btn-back { background-color: var(--sdv-danger); color: white; }
+    .btn-add { background-color: var(--sdv-success); color: white; }
+    .btn-delete { background-color: var(--sdv-danger); color: white; }
+    .btn-connect { background-color: var(--sdv-ui-blue); color: white; font-size: 10px; padding: 4px 8px; }
+    .btn-small { font-size: 10px; padding: 4px 8px; }
+
+    .btn:hover {
+      opacity: 1;
+      transform: translateY(-2px);
+      filter: brightness(1.1);
+    }
+    
+    .btn:active {
+      transform: translateY(2px);
+      box-shadow: none;
+    }
+
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .left-panel {
+      width: 260px;
+      background-color: var(--sdv-bg-panel);
+      border-right: 4px solid var(--sdv-border-outline);
+      padding-top: 60px;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 4px 0 0 rgba(0,0,0,0.2);
+      z-index: 10;
+    }
+
+    .panel-title {
+      padding: 15px;
+      font-size: 14px;
+      color: var(--sdv-text-dark);
+      font-weight: bold;
+      border-bottom: 3px solid var(--sdv-border-outline);
+      font-family: var(--sdv-font-family);
+      text-align: center;
+      background-color: var(--sdv-primary-light);
+    }
+
+    .chapter-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 15px;
+      background-color: var(--sdv-bg-panel);
+    }
+
+    .chapter-item {
+      padding: 12px 15px;
+      margin-bottom: 10px;
+      background-color: var(--sdv-bg-panel-dark);
+      border: 3px solid var(--sdv-border-outline);
+      border-radius: 0;
+      cursor: pointer;
+      transition: all 0.1s;
+      position: relative;
+      box-shadow: 3px 3px 0 rgba(0,0,0,0.2);
+    }
+
+    .chapter-item:hover {
+      background-color: #fff;
+      transform: translate(-2px, -2px);
+      box-shadow: 5px 5px 0 rgba(0,0,0,0.2);
+    }
+
+    .chapter-item.active {
+      background-color: var(--sdv-primary);
+      color: var(--sdv-text-light);
+      border-color: var(--sdv-border-dark);
+    }
+
+    .chapter-item .chapter-name {
+      font-weight: bold;
+      margin-bottom: 4px;
+      font-size: 12px;
+      font-family: var(--sdv-font-family);
+    }
+
+    .chapter-item .chapter-info {
+      font-size: 10px;
+      opacity: 0.8;
+      font-family: var(--sdv-font-family);
+    }
+
+    .chapter-item .chapter-actions {
+      position: absolute;
+      right: 8px;
+      top: 50%;
+      transform: translateY(-50%);
+      display: none;
+    }
+
+    .chapter-item:hover .chapter-actions {
+      display: flex;
+      gap: 4px;
+    }
+
+    .chapter-item.active .chapter-actions .btn-delete-chapter {
+      background-color: var(--sdv-danger);
+      color: #fff;
+      border: 2px solid white;
+    }
+
+    .add-chapter-btn {
+      margin: 15px;
+      padding: 12px;
+      font-family: var(--sdv-font-family);
+    }
+    
+    /* Canvas Area */
+    .canvas-area {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      background-color: #6c7a89;
+      position: relative;
+      padding-top: 60px;
+      overflow: hidden;
+    }
+    
+    .canvas-toolbar {
+      height: 50px;
+      background-color: var(--sdv-bg-panel);
+      border-bottom: 3px solid var(--sdv-border-outline);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 20px;
+      z-index: 20;
+      box-shadow: 0 4px 0 rgba(0,0,0,0.1);
+      flex-shrink: 0;
+    }
+
+    .canvas-viewport {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+      background-color: #6c7a89;
+      cursor: grab;
+    }
+    
+    .canvas-viewport:active {
+      cursor: grabbing;
+    }
+    
+    .current-chapter-info {
+      position: static;
+      top: auto;
+      left: auto;
+      padding: 0;
+      background-color: transparent;
+      border: none;
+      font-size: 14px;
+      color: var(--sdv-text-dark);
+      font-family: var(--sdv-font-family);
+      box-shadow: none;
+    }
+
+    .current-chapter-info strong {
+      color: var(--sdv-primary-dark);
+    }
+    
+    .canvas-controls {
+      position: static;
+      top: auto;
+      right: auto;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+    
+    .node-btn {
+      padding: 6px 12px;
+      background-color: var(--sdv-bg-panel);
+      border: 3px solid var(--sdv-border-outline);
+      color: var(--sdv-text-dark);
+      font-family: var(--sdv-font-family);
+      font-size: 12px;
+      cursor: pointer;
+      box-shadow: 2px 2px 0 rgba(0,0,0,0.2);
+      transition: transform 0.1s;
+    }
+    
+    .node-btn:hover {
+      transform: translateY(-2px);
+      background-color: #fff;
+    }
+    
+    .node-btn-dialogue { border-bottom: 4px solid var(--sdv-ui-blue); }
+    .node-btn-choice { border-bottom: 4px solid var(--sdv-warning); }
+    .node-btn-condition { border-bottom: 4px solid var(--sdv-primary); }
+    .node-btn-ending { border-bottom: 4px solid var(--sdv-danger); }
+
+    .canvas-content {
+      width: 5000px;
+      height: 5000px;
+      position: absolute;
+      top: 0;
+      left: 0;
+      transform-origin: 0 0;
+      background-image: 
+        linear-gradient(rgba(255,255,255,0.05) 2px, transparent 2px),
+        linear-gradient(90deg, rgba(255,255,255,0.05) 2px, transparent 2px);
+      background-size: 40px 40px;
+    }
+    
+    .connection-svg {
+      width: 100%;
+      height: 100%;
+      position: absolute;
+      top: 0;
+      left: 0;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .connection-line {
+      fill: none;
+      stroke-width: 2;
+    }
+
+    .temp-connection-line {
+      fill: none;
+      stroke: #ffffff;
+      stroke-width: 2;
+      stroke-dasharray: 5, 5;
+      pointer-events: none;
+    }
+    
+    /* Nodes on Canvas */
+    .node-element, .node {
+      position: absolute;
+      width: 220px;
+      background-color: var(--sdv-bg-panel);
+      border: 3px solid var(--sdv-border-outline);
+      box-shadow: 6px 6px 0 rgba(0,0,0,0.3);
+      display: flex;
+      flex-direction: column;
+      z-index: 1;
+      user-select: none;
+      border-radius: 0;
+    }
+    
+    .node-element.selected, .node.selected {
+      border-color: var(--sdv-ui-blue);
+      box-shadow: 0 0 0 2px var(--sdv-ui-blue), 8px 8px 0 rgba(0,0,0,0.3);
+      z-index: 10;
+    }
+    
+    .node-header {
+      padding: 8px 12px;
+      background-color: var(--sdv-primary);
+      color: white;
+      border-bottom: 3px solid var(--sdv-border-outline);
+      font-size: 12px;
+      font-family: var(--sdv-font-family);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: move;
+      border-radius: 0;
+    }
+    
+    .node-choice .node-header { background-color: var(--sdv-warning); color: var(--sdv-text-dark); border-bottom: 3px solid var(--sdv-border-outline); }
+    .node-condition .node-header { background-color: var(--sdv-primary-dark); border-bottom: 3px solid var(--sdv-border-outline); }
+    .node-ending .node-header { background-color: var(--sdv-danger); border-bottom: 3px solid var(--sdv-border-outline); }
+    
+    .node-body, .node-content {
+      padding: 12px;
+      font-size: 12px;
+      color: var(--sdv-text-dark);
+      font-family: var(--sdv-font-family);
+      min-height: 40px;
+      line-height: 1.4;
+    }
+    
+    .node-ports {
+      display: flex;
+      justify-content: space-between;
+      padding: 0 10px 10px;
+    }
+    
+    .port, .connection-point {
+      width: 14px;
+      height: 14px;
+      background-color: #ccc;
+      border: 2px solid var(--sdv-border-outline);
+      cursor: pointer;
+      transition: transform 0.1s;
+      border-radius: 0;
+    }
+    
+    .connection-point {
+      background-color: var(--sdv-ui-blue);
+      position: absolute;
+      right: -8px;
+      bottom: 10px;
+      z-index: 5;
+    }
+    
+    .connection-point:hover {
+      transform: scale(1.2);
+      background-color: var(--sdv-ui-blue-light);
+    }
+    
+    /* Right Panel */
+    .right-panel {
+      width: 320px;
+      background-color: var(--sdv-bg-panel);
+      border-left: 4px solid var(--sdv-border-outline);
+      padding-top: 60px;
+      display: flex;
+      flex-direction: column;
+      box-shadow: -4px 0 0 rgba(0,0,0,0.2);
+      z-index: 10;
+      overflow-y: auto;
+    }
+    
+    .empty-state {
+      padding: 40px 20px;
+      text-align: center;
+      color: var(--sdv-text-dark);
+      font-family: var(--sdv-font-family);
+      font-size: 12px;
+      opacity: 0.6;
+    }
+    
+    .empty-state .icon {
+      font-size: 32px;
+      margin-bottom: 15px;
+      display: block;
+    }
+    
+    .property-group, .property-section {
+      padding: 15px;
+      border-bottom: 2px solid rgba(0,0,0,0.1);
+    }
+    
+    .property-label {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 12px;
+      color: var(--sdv-text-dark);
+      font-family: var(--sdv-font-family);
+      font-weight: bold;
+    }
+
+    .property-input, .property-select, .property-textarea {
+      width: 100%;
+      padding: 10px;
+      background-color: #fff8e1;
+      border: 3px solid var(--sdv-border-outline);
+      border-radius: 0;
+      font-size: 12px;
+      font-family: var(--sdv-font-family);
+      color: var(--sdv-text-dark);
+      box-shadow: inset 3px 3px 0 rgba(0,0,0,0.1);
+    }
+    
+    .property-input:focus, .property-select:focus, .property-textarea:focus {
+      outline: none;
+      background-color: #ffffff;
+      box-shadow: inset 3px 3px 0 rgba(0,0,0,0.05);
+    }
+
+    .property-textarea {
+      min-height: 80px;
+      resize: vertical;
+      line-height: 1.5;
+    }
+    
+    /* Asset Library Styles */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(2px);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+    }
+
+    .modal-content, .modal {
+      background-color: var(--sdv-bg-panel);
+      border: 4px solid var(--sdv-border-outline);
+      box-shadow: 
+        inset 4px 4px 0px var(--sdv-border-light),
+        inset -4px -4px 0px var(--sdv-border-dark),
+        10px 10px 0px rgba(0,0,0,0.4);
+      border-radius: 0;
+      width: 700px;
+      max-height: 85vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      padding: 0;
+    }
+    
+    .modal {
+      width: 400px;
+      padding: 20px;
+    }
+    
+    .modal-wide {
+      width: 800px;
+    }
+
+    .modal-header {
+      background-color: var(--sdv-primary);
+      padding: 15px 20px;
+      border-bottom: 4px solid var(--sdv-border-outline);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .modal-header h3, .modal h2 {
+      margin: 0;
+      color: var(--sdv-text-light);
+      font-family: var(--sdv-font-family);
+      font-size: 14px;
+      text-shadow: 1px 1px 0 rgba(0,0,0,0.3);
+    }
+    
+    .modal h2 {
+      color: var(--sdv-text-dark);
+      text-shadow: none;
+      margin-bottom: 15px;
+      font-size: 16px;
+      border-bottom: 2px solid var(--sdv-border-outline);
+      padding-bottom: 10px;
+    }
+    
+    .modal p {
+      font-size: 12px;
+      color: var(--sdv-text-dark);
+      margin-bottom: 20px;
+      line-height: 1.5;
+    }
+    
+    .modal input {
+      margin-bottom: 20px;
+    }
+    
+    .modal-buttons {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+
+    .close-btn {
+      cursor: pointer;
+      font-size: 20px;
+      color: var(--sdv-text-light);
+      font-weight: bold;
+    }
+    
+    .close-btn:hover {
+      color: var(--sdv-bg-panel);
+    }
+
+    .asset-tabs {
+      display: flex;
+      padding: 10px 20px 0;
+      background-color: var(--sdv-bg-panel-dark);
+      border-bottom: 4px solid var(--sdv-border-outline);
+    }
+
+    .asset-tab {
+      padding: 10px 20px;
+      cursor: pointer;
+      font-family: var(--sdv-font-family);
+      font-size: 12px;
+      background-color: var(--sdv-bg-panel);
+      border: 3px solid var(--sdv-border-outline);
+      border-bottom: none;
+      margin-right: 5px;
+      color: var(--sdv-text-dark);
+      position: relative;
+      top: 4px;
+    }
+
+    .asset-tab.active {
+      background-color: var(--sdv-primary);
+      color: var(--sdv-text-light);
+      top: 4px;
+      padding-bottom: 14px;
+    }
+
+    .asset-list {
+      flex: 1;
+      padding: 20px;
+      background-color: #fff8e1;
+      overflow-y: auto;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+      gap: 15px;
+    }
+
+    .asset-item, .asset-card {
+      background-color: var(--sdv-bg-panel);
+      border: 3px solid var(--sdv-border-outline);
+      border-radius: 0;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      cursor: pointer;
+      transition: transform 0.1s;
+      box-shadow: 4px 4px 0 rgba(0,0,0,0.2);
+    }
+
+    .asset-item:hover, .asset-card:hover {
+      transform: translateY(-2px);
+      background-color: #fff;
+    }
+
+    .asset-preview, .asset-thumb {
+      width: 100%;
+      height: 80px;
+      object-fit: contain;
+      background-color: #ccc;
+      border: 2px solid var(--sdv-border-outline);
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+    
+    .asset-thumb img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .asset-name, .asset-meta input {
+      font-size: 10px;
+      color: var(--sdv-text-dark);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      width: 100%;
+      text-align: center;
+      font-family: var(--sdv-font-family);
+      margin-bottom: 5px;
+    }
+    
+    .asset-meta {
+      width: 100%;
+    }
+    
+    .asset-meta input {
+      background-color: #fff;
+      border: 1px solid var(--sdv-border-outline);
+      padding: 4px;
+      text-align: left;
+    }
+
+    .asset-actions {
+      display: flex;
+      justify-content: space-between;
+      gap: 5px;
+      width: 100%;
+      align-items: center;
+    }
+    
+    .asset-id {
+      font-size: 8px;
+      color: #666;
+      max-width: 60px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .asset-action-btn {
+      flex: 1;
+      padding: 4px;
+      font-size: 10px;
+      border: 2px solid var(--sdv-border-outline);
+      background-color: var(--sdv-ui-blue);
+      color: white;
+      cursor: pointer;
+      font-family: var(--sdv-font-family);
+    }
+
+    .asset-action-btn.delete, .btn-delete {
+      background-color: var(--sdv-danger);
+    }
+
+    .upload-area, .asset-layout {
+      padding: 15px 20px;
+      border-top: 4px solid var(--sdv-border-outline);
+      background-color: var(--sdv-bg-panel-dark);
+      text-align: center;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    
+    .asset-layout {
+      display: grid;
+      grid-template-columns: 240px 1fr;
+      gap: 0;
+      padding: 0;
+      height: 100%;
+      border: none;
+      align-items: stretch;
+    }
+    
+    .asset-left {
+      padding: 20px;
+      border-right: 4px solid var(--sdv-border-outline);
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      background-color: var(--sdv-bg-panel);
+    }
+    
+    .asset-right {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      overflow: hidden;
+    }
+    
+    .asset-field {
+      text-align: left;
+    }
+    
+    .asset-field label {
+      display: block;
+      margin-bottom: 5px;
+      font-size: 12px;
+      color: var(--sdv-text-dark);
+      font-family: var(--sdv-font-family);
+    }
+
+    .asset-btn {
+      margin-left: 5px;
+      padding: 4px 10px;
+      font-size: 12px;
+      border-radius: 4px;
+      border: none;
+      background: #fdcb6e;
+      color: #000;
+      cursor: pointer;
+    }
+
+    .option-item, .choice-item {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 10px;
+      background-color: var(--sdv-bg-panel-dark);
+      padding: 10px;
+      border: 2px solid var(--sdv-border-outline);
+    }
+    
+    .goto-selector {
+      display: flex;
+      gap: 5px;
+      width: 100%;
+    }
+    
+    .node-id-badge {
+      background-color: rgba(0,0,0,0.2);
+      padding: 2px 4px;
+      border-radius: 2px;
+      font-size: 10px;
+      margin-left: 5px;
+    }
+    
+    .start-badge {
+      background-color: #ffd700;
+      color: #000;
+      padding: 2px 4px;
+      border-radius: 2px;
+      font-size: 10px;
+      margin-left: 5px;
+      text-shadow: none;
+    }
+    
+    .help-text {
+      font-size: 10px;
+      color: #666;
+      margin-top: 5px;
+      line-height: 1.4;
+    }
+    
+    .hidden {
+      display: none !important;
+    }
+  </style>
+</head>
+<body>
+  <div class="top-bar">
+    <h1>可视化剧情编辑器 v0.5.1</h1>
+    <div class="top-bar-buttons">
+      <button class="btn btn-assets" onclick="showAssetModal()">资源库</button>
+      <button class="btn btn-preview" onclick="previewStory()">预览</button>
+      <button class="btn btn-export" onclick="exportStory()">导出</button>
+      <button class="btn btn-back" onclick="goBack()">返回</button>
+    </div>
+  </div>
+
+  <div class="editor-container">
+    <div class="left-panel">
+      <div class="panel-title">章节列表</div>
+      <div class="chapter-list" id="chapterList"></div>
+      <button class="btn btn-add add-chapter-btn" onclick="showAddChapterModal()">+ 添加章节</button>
+    </div>
+
+    <div class="canvas-area">
+      <div class="canvas-toolbar">
+        <div class="current-chapter-info" id="chapterInfo">
+          当前章节: <strong>请选择章节</strong>
+        </div>
+        <div class="canvas-controls">
+          <span style="font-size:12px;color:var(--sdv-text-dark);margin-right:10px;">添加节点:</span>
+          <button class="node-btn node-btn-dialogue" onclick="addNode('dialogue')">对话</button>
+          <button class="node-btn node-btn-choice" onclick="addNode('choice')">选项</button>
+          <button class="node-btn node-btn-condition" onclick="addNode('condition')">条件</button>
+          <button class="node-btn node-btn-ending" onclick="addNode('ending')">结局</button>
+        </div>
+      </div>
+      <div class="canvas-viewport" id="canvasViewport">
+        <div class="canvas-content" id="canvasContent">
+          <svg class="connection-svg" id="connectionSvg"></svg>
+        </div>
+      </div>
+    </div>
+
+    <div class="right-panel" id="propertyPanel">
+      <div class="panel-title">属性编辑</div>
+      <div class="empty-state">
+        <div class="icon">📝</div>
+        选择一个节点进行编辑
+      </div>
+    </div>
+  </div>
+
+  <!-- Modals (Add Chapter, Delete Chapter, Delete Node, Asset Modal) -->
+  <div class="modal-overlay hidden" id="addChapterModal">
+    <div class="modal">
+      <h2>添加新章节</h2>
+      <p>创建一个新的剧情章节，每个章节有独立的节点流程图。</p>
+      <input type="text" id="chapterNameInput" placeholder="输入章节名称，如：第一章 - 相遇">
+      <div class="modal-buttons">
+        <button class="btn btn-back" onclick="hideAddChapterModal()">取消</button>
+        <button class="btn btn-add" onclick="addChapter()">确定</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay hidden" id="deleteChapterModal">
+    <div class="modal">
+      <h2>删除章节</h2>
+      <p id="deleteChapterText">确定要删除该章节吗？章节内的所有节点都将被删除，此操作不可撤销。</p>
+      <div class="modal-buttons">
+        <button class="btn btn-back" onclick="hideDeleteChapterModal()">取消</button>
+        <button class="btn btn-delete" onclick="confirmDeleteChapter()">删除</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay hidden" id="deleteNodeModal">
+    <div class="modal">
+      <h2>删除节点</h2>
+      <p>确定要删除该节点吗？与之相关的连接也会被移除。</p>
+      <div class="modal-buttons">
+        <button class="btn btn-back" onclick="hideDeleteNodeModal()">取消</button>
+        <button class="btn btn-delete" onclick="confirmDeleteNode()">删除</button>
+      </div>
+    </div>
+  </div>
+  
+  <div class="modal-overlay hidden" id="assetModal">
+    <div class="modal modal-wide">
+      <h2>资源库（本地 Demo）</h2>
+      <p>上传角色/背景/道具图片，节点属性可直接从资源库选择。</p>
+      
+      <div class="asset-layout">
+        <div class="asset-left">
+          <div class="asset-field">
+            <label>资源类型</label>
+            <select id="assetTypeSelect" onchange="setAssetFilter(this.value)">
+              <option value="background">背景</option>
+              <option value="character">角色</option>
+              <option value="prop">道具</option>
+            </select>
+          </div>
+          
+          <div class="asset-field">
+            <label>资源名称</label>
+            <input id="assetNameInput" type="text" placeholder="例如：咖啡店-夜景">
+          </div>
+          
+          <div class="asset-field">
+            <label>选择图片文件</label>
+            <input id="assetFileInput" type="file" accept="image/*">
+          </div>
+          
+          <div class="modal-buttons" style="justify-content:flex-start;">
+            <button class="btn btn-add" onclick="uploadAsset()">上传</button>
+            <button class="btn btn-back" onclick="hideAssetModal()">关闭</button>
+          </div>
+          
+          <div class="help-text" style="margin-top:10px;">
+            点击资源卡片可快速应用到当前选中的对话节点（背景/角色）。
+          </div>
+        </div>
+        
+        <div class="asset-right">
+          <div class="property-label" style="margin:0;">资源列表</div>
+          <div class="asset-list" id="assetList"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // State management
+    const state = {
+      chapters: [],
+      currentChapterId: null,
+      nodesByChapter: {},
+      selectedNode: null,
+      nodeIdCounter: 0,
+      
+      // Drag & Connect State
+      connectingFrom: null, // Legacy state for button click
+      connectingFromChoice: null,
+      
+      isDraggingConnection: false,
+      dragStartNodeId: null,
+      dragStartChoiceIndex: null,
+      dragCurrentX: 0,
+      dragCurrentY: 0,
+      
+      // Canvas Panning
+      canvasX: 0,
+      canvasY: 0,
+      isPanning: false,
+      panStartX: 0,
+      panStartY: 0,
+      
+      deleteChapterId: null,
+      deleteNodeId: null,
+      dirty: false,
+      lastSavedAt: null
+    };
+    
+    let saveTimer = null;
+    let assets = [];
+    let assetFilterType = 'background';
+    let assetSaveTimer = null;
+
+    function init() {
+      loadSavedData();
+      loadAssets();
+      if (state.chapters.length === 0) {
+        createDefaultChapter();
+      }
+      renderChapterList();
+      updateChapterInfo();
+      
+      // Add global mouse listeners for drag connection
+      document.addEventListener('mousemove', handleGlobalMouseMove);
+      document.addEventListener('mouseup', handleGlobalMouseUp);
+      
+      initCanvasPanning();
+    }
+    
+    function initCanvasPanning() {
+      const viewport = document.getElementById('canvasViewport');
+      const content = document.getElementById('canvasContent');
+      
+      viewport.addEventListener('mousedown', (e) => {
+        // Only pan if clicking on viewport background or content background (not nodes)
+        if (e.target === viewport || e.target === content || e.target.id === 'connectionSvg') {
+           state.isPanning = true;
+           state.panStartX = e.clientX - state.canvasX;
+           state.panStartY = e.clientY - state.canvasY;
+           viewport.style.cursor = 'grabbing';
+        }
+      });
+      
+      document.addEventListener('mousemove', (e) => {
+        if (!state.isPanning) return;
+        e.preventDefault();
+        state.canvasX = e.clientX - state.panStartX;
+        state.canvasY = e.clientY - state.panStartY;
+        updateCanvasTransform();
+      });
+      
+      document.addEventListener('mouseup', () => {
+        if (state.isPanning) {
+          state.isPanning = false;
+          viewport.style.cursor = 'grab';
+        }
+      });
+    }
+    
+    function updateCanvasTransform() {
+      const content = document.getElementById('canvasContent');
+      content.style.transform = `translate(${state.canvasX}px, ${state.canvasY}px)`;
+    }
+    
+    // ... [Reuse load/save logic from previous] ...
+    
+    function createDefaultChapter() {
+      const chapterId = 'start';
+      state.chapters = [{ id: chapterId, name: '序章 - 相遇', startNode: null }];
+      state.currentChapterId = chapterId;
+      state.nodesByChapter[chapterId] = [];
+      state.nodeIdCounter = 0;
+      
+      const defaultNodes = [
+        { id: 'scene_1', type: 'dialogue', x: 100, y: 100, data: { speaker: '旁白', text: '这是一个阳光明媚的早晨...', background: 'bg_street', character: 'null', goto: 'scene_2' } },
+        { id: 'scene_2', type: 'dialogue', x: 320, y: 100, data: { speaker: '???', text: '哇啊！对不起对不起！', background: 'bg_street', character: 'char_heroine_normal', goto: 'scene_3' } },
+        { id: 'scene_3', type: 'dialogue', x: 540, y: 100, data: { speaker: '小雪', text: '你是...新搬来的邻居吗？我叫小雪！', background: 'bg_street', character: 'char_heroine_normal', goto: 'choice_1' } },
+        { id: 'choice_1', type: 'choice', x: 760, y: 100, data: { choices: [
+          { text: '是的，我刚搬来不久。你好！', affection: 5, goto: 'friendly_response' },
+          { text: '嗯...你撞到我了。', affection: -3, goto: 'cold_response' }
+        ]}},
+        { id: 'friendly_response', type: 'dialogue', x: 540, y: 280, data: { speaker: '小雪', text: '太好了！以后我们就是朋友啦！', background: 'bg_street', character: 'char_heroine_happy', goto: 'ending_1' } },
+        { id: 'cold_response', type: 'dialogue', x: 760, y: 280, data: { speaker: '小雪', text: '啊...真的对不起！', background: 'bg_street', character: 'char_heroine_shy', goto: 'ending_1' } },
+        { id: 'ending_1', type: 'ending', x: 650, y: 450, data: { endingType: 'normal' } }
+      ];
+      
+      state.nodesByChapter[chapterId] = defaultNodes;
+      state.chapters[0].startNode = 'scene_1';
+      state.nodeIdCounter = 10;
+      saveData();
+    }
+
+    function loadSavedData() {
+      const saved = localStorage.getItem('editor_data_v4');
+      if (saved) {
+        const data = JSON.parse(saved);
+        state.chapters = data.chapters || [];
+        state.currentChapterId = data.currentChapterId || null;
+        state.nodesByChapter = data.nodesByChapter || {};
+        state.nodeIdCounter = data.nodeIdCounter || 0;
+        
+        if (state.currentChapterId) {
+          loadChapterNodes(state.currentChapterId);
+        }
+      }
+    }
+
+    function saveData() {
+      localStorage.setItem('editor_data_v4', JSON.stringify({
+        chapters: state.chapters,
+        currentChapterId: state.currentChapterId,
+        nodesByChapter: state.nodesByChapter,
+        nodeIdCounter: state.nodeIdCounter
+      }));
+      state.dirty = false;
+      state.lastSavedAt = Date.now();
+    }
+    
+    function scheduleSave() {
+      state.dirty = true;
+      if (saveTimer) clearTimeout(saveTimer);
+      saveTimer = setTimeout(() => {
+        saveTimer = null;
+        saveData();
+      }, 300);
+    }
+    
+    // ... [Asset Logic - Same as before] ...
+    function loadAssets() {
+      const raw = localStorage.getItem('assets_v1');
+      if (raw) { try { assets = JSON.parse(raw) || []; } catch { assets = []; } } else { assets = []; }
+    }
+    function saveAssets() { localStorage.setItem('assets_v1', JSON.stringify(assets)); }
+    function scheduleAssetsSave() { if (assetSaveTimer) clearTimeout(assetSaveTimer); assetSaveTimer = setTimeout(saveAssets, 300); }
+    function showAssetModal() { loadAssets(); document.getElementById('assetModal').classList.remove('hidden'); document.getElementById('assetTypeSelect').value = assetFilterType; renderAssetList(); }
+    function hideAssetModal() { document.getElementById('assetModal').classList.add('hidden'); }
+    function setAssetFilter(type) { assetFilterType = type; renderAssetList(); }
+    
+    async function uploadAsset() {
+      const type = document.getElementById('assetTypeSelect').value;
+      const name = document.getElementById('assetNameInput').value.trim();
+      const file = document.getElementById('assetFileInput').files[0];
+      if (!file) { alert('请选择图片文件'); return; }
+      
+      const formData = new FormData();
+      formData.append('asset_type', type);
+      formData.append('name', name || file.name);
+      formData.append('file', file);
+      
+      try {
+        const resp = await fetch('http://localhost:8001/api/v1/assets/upload', { method: 'POST', body: formData });
+        if (!resp.ok) throw new Error('upload failed');
+        const data = await resp.json();
+        assets.unshift({ id: data.id, type: data.type, name: data.name, url: data.url, createdAt: Date.now() });
+        saveAssets(); renderAssetList();
+        if (state.selectedNode) renderPropertyPanel(state.selectedNode);
+        document.getElementById('assetNameInput').value = ''; document.getElementById('assetFileInput').value = '';
+      } catch (e) {
+        const reader = new FileReader();
+        reader.onload = () => {
+          assets.unshift({ id: `${type}_${Date.now()}`, type, name: name || file.name, dataUrl: String(reader.result), createdAt: Date.now() });
+          saveAssets(); renderAssetList();
+          if (state.selectedNode) renderPropertyPanel(state.selectedNode);
+          document.getElementById('assetNameInput').value = ''; document.getElementById('assetFileInput').value = '';
+        };
+        reader.readAsDataURL(file);
+      }
+    }
+    
+    function deleteAsset(assetId) {
+      const index = assets.findIndex(a => a.id === assetId);
+      if (index === -1) return;
+      assets.splice(index, 1);
+      saveAssets(); renderAssetList();
+      if (state.selectedNode) renderPropertyPanel(state.selectedNode);
+    }
+    
+    function updateAssetName(assetId, value) {
+      const asset = assets.find(a => a.id === assetId);
+      if (!asset) return;
+      asset.name = value; scheduleAssetsSave(); renderAssetList();
+      if (state.selectedNode) renderPropertyPanel(state.selectedNode);
+    }
+    
+    function applyAssetToSelectedNode(assetId) {
+      const asset = assets.find(a => a.id === assetId);
+      if (!asset || !state.selectedNode) return;
+      if (state.selectedNode.type !== 'dialogue') return;
+      if (asset.type === 'background') updateNodeData('background', asset.id);
+      else if (asset.type === 'character') updateNodeData('character', asset.id);
+    }
+    
+    function renderAssetList() {
+      const container = document.getElementById('assetList');
+      if (!container) return;
+      const filtered = assets.filter(a => a.type === assetFilterType);
+      container.innerHTML = '';
+      filtered.forEach(a => {
+        const card = document.createElement('div');
+        card.className = 'asset-card';
+        card.onclick = () => applyAssetToSelectedNode(a.id);
+        const src = a.url || a.dataUrl || '';
+        card.innerHTML = `<div class="asset-thumb"><img src="${src}" alt="${a.name}"></div><div class="asset-meta"><input value="${escapeHtml(a.name)}" oninput="updateAssetName('${a.id}', this.value)"><div class="asset-actions"><div class="asset-id">${a.id}</div><button class="btn btn-small btn-delete" onclick="event.stopPropagation(); deleteAsset('${a.id}')">删除</button></div></div>`;
+        container.appendChild(card);
+      });
+      if (filtered.length === 0) container.innerHTML = '<div class="help-text">暂无资源，先在左侧上传。</div>';
+    }
+    
+    function escapeHtml(str) { return String(str).replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;').replaceAll("'", '&#39;'); }
+    function getAssetsByType(type) { return assets.filter(a => a.type === type); }
+    
+    // ... [Reuse Option Builders] ...
+    function buildBackgroundOptions(selected) {
+      const builtin = [{ value: 'bg_street', label: '街道（内置）' }, { value: 'bg_cafe', label: '咖啡店（内置）' }, { value: 'bg_park', label: '公园（内置）' }];
+      const custom = getAssetsByType('background').map(a => ({ value: a.id, label: `${a.name}（资源库）` }));
+      return `<optgroup label="内置背景">${builtin.map(o => `<option value="${o.value}" ${selected === o.value ? 'selected' : ''}>${o.label}</option>`).join('')}</optgroup>` + 
+             `<optgroup label="资源库背景">${custom.map(o => `<option value="${o.value}" ${selected === o.value ? 'selected' : ''}>${escapeHtml(o.label)}</option>`).join('')}</optgroup>`;
+    }
+    function buildCharacterOptions(selected) {
+      const builtin = [{ value: 'null', label: '无角色（内置）' }, { value: 'char_heroine_normal', label: '小雪-默认（内置）' }, { value: 'char_heroine_happy', label: '小雪-开心（内置）' }, { value: 'char_heroine_shy', label: '小雪-害羞（内置）' }];
+      const custom = getAssetsByType('character').map(a => ({ value: a.id, label: `${a.name}（资源库）` }));
+      return `<optgroup label="内置角色">${builtin.map(o => `<option value="${o.value}" ${selected === o.value ? 'selected' : ''}>${o.label}</option>`).join('')}</optgroup>` +
+             `<optgroup label="资源库角色">${custom.map(o => `<option value="${o.value}" ${selected === o.value ? 'selected' : ''}>${escapeHtml(o.label)}</option>`).join('')}</optgroup>`;
+    }
+    function buildSpeakerOptions(selected) {
+      const builtin = [{ value: '旁白', label: '旁白' }, { value: '???', label: '???' }];
+      const seen = new Set();
+      const custom = getAssetsByType('character').map(a => (a && a.name ? String(a.name).trim() : '')).filter(n => n && !seen.has(n) && (seen.add(n), true)).map(n => ({ value: n, label: n }));
+      const opts = [];
+      opts.push(`<option value="" ${!selected ? 'selected' : ''}>-- 选择说话人 --</option>`);
+      if (selected && !new Set([...builtin.map(b=>b.value), ...custom.map(c=>c.value)]).has(selected)) opts.push(`<optgroup label="当前值"><option value="${escapeHtml(selected)}" selected>${escapeHtml(selected)}</option></optgroup>`);
+      opts.push(`<optgroup label="内置">${builtin.map(o => `<option value="${o.value}" ${selected === o.value ? 'selected' : ''}>${o.label}</option>`).join('')}</optgroup>`);
+      opts.push(`<optgroup label="资源库角色名">${custom.map(o => `<option value="${escapeHtml(o.value)}" ${selected === o.value ? 'selected' : ''}>${escapeHtml(o.label)}</option>`).join('')}</optgroup>`);
+      return opts.join('');
+    }
+
+    // ... [Chapter List Logic] ...
+    function renderChapterList() {
+      const container = document.getElementById('chapterList');
+      container.innerHTML = '';
+      state.chapters.forEach(chapter => {
+        const nodeCount = (state.nodesByChapter[chapter.id] || []).length;
+        const item = document.createElement('div');
+        item.className = 'chapter-item' + (chapter.id === state.currentChapterId ? ' active' : '');
+        item.innerHTML = `<div class="chapter-name">${chapter.name}</div><div class="chapter-info">${nodeCount} 个节点</div><div class="chapter-actions"><button class="btn btn-small btn-delete btn-delete-chapter" onclick="event.stopPropagation(); showDeleteChapterModal('${chapter.id}')">删除</button></div>`;
+        item.onclick = () => switchChapter(chapter.id);
+        container.appendChild(item);
+      });
+    }
+
+    function switchChapter(chapterId) {
+      if (chapterId === state.currentChapterId) return;
+      saveData();
+      state.currentChapterId = chapterId;
+      state.selectedNode = null;
+      clearCanvas();
+      loadChapterNodes(chapterId);
+      renderChapterList();
+      updateChapterInfo();
+      clearPropertyPanel();
+      saveData();
+    }
+
+    function loadChapterNodes(chapterId) {
+      const nodes = state.nodesByChapter[chapterId] || [];
+      nodes.forEach(node => renderNode(node));
+      updateConnections();
+    }
+
+    function clearCanvas() {
+      document.getElementById('canvasContent').innerHTML = '<svg class="connection-svg" id="connectionSvg"></svg>';
+    }
+
+    function updateChapterInfo() {
+      const info = document.getElementById('chapterInfo');
+      const chapter = state.chapters.find(c => c.id === state.currentChapterId);
+      info.innerHTML = chapter ? `当前章节: <strong>${chapter.name}</strong> (${(state.nodesByChapter[chapter.id] || []).length} 个节点)` : `当前章节: <strong>请选择章节</strong>`;
+    }
+    
+    // ... [Chapter Modals] ...
+    function showAddChapterModal() { document.getElementById('addChapterModal').classList.remove('hidden'); document.getElementById('chapterNameInput').focus(); }
+    function hideAddChapterModal() { document.getElementById('addChapterModal').classList.add('hidden'); document.getElementById('chapterNameInput').value = ''; }
+    function addChapter() {
+      const name = document.getElementById('chapterNameInput').value.trim();
+      if (name) {
+        const chapterId = 'chapter_' + Date.now();
+        state.chapters.push({ id: chapterId, name: name, startNode: null });
+        state.nodesByChapter[chapterId] = [];
+        switchChapter(chapterId);
+        hideAddChapterModal();
+      }
+    }
+    function showDeleteChapterModal(chapterId) {
+      state.deleteChapterId = chapterId;
+      const chapter = state.chapters.find(c => c.id === chapterId);
+      document.getElementById('deleteChapterText').textContent = `确定要删除「${chapter.name}」吗？该章节内的 ${(state.nodesByChapter[chapterId] || []).length} 个节点都将被删除，此操作不可撤销。`;
+      document.getElementById('deleteChapterModal').classList.remove('hidden');
+    }
+    function hideDeleteChapterModal() { document.getElementById('deleteChapterModal').classList.add('hidden'); state.deleteChapterId = null; }
+    function confirmDeleteChapter() {
+      const chapterId = state.deleteChapterId;
+      if (!chapterId) return;
+      const index = state.chapters.findIndex(c => c.id === chapterId);
+      if (index > -1) {
+        state.chapters.splice(index, 1);
+        delete state.nodesByChapter[chapterId];
+        if (state.currentChapterId === chapterId) {
+          if (state.chapters.length > 0) switchChapter(state.chapters[Math.max(0, index - 1)].id);
+          else { state.currentChapterId = null; clearCanvas(); clearPropertyPanel(); }
+        }
+        renderChapterList(); updateChapterInfo(); saveData();
+      }
+      hideDeleteChapterModal();
+    }
+
+    // ... [Node Logic] ...
+    function getCurrentNodes() { return state.currentChapterId ? (state.nodesByChapter[state.currentChapterId] || []) : []; }
+    function setCurrentNodes(nodes) { if (state.currentChapterId) state.nodesByChapter[state.currentChapterId] = nodes; }
+    
+    function addNode(type) {
+      if (!state.currentChapterId) { alert('请先选择一个章节'); return; }
+      const node = { id: type + '_' + (state.nodeIdCounter++), type: type, x: 100 + Math.random() * 200, y: 150 + Math.random() * 200, data: getDefaultNodeData(type) };
+      const nodes = getCurrentNodes();
+      nodes.push(node);
+      setCurrentNodes(nodes);
+      const chapter = state.chapters.find(c => c.id === state.currentChapterId);
+      if (!chapter.startNode) chapter.startNode = node.id;
+      renderNode(node);
+      selectNode(node.id);
+      saveData();
+      updateChapterInfo();
+      renderChapterList();
+    }
+    
+    function getDefaultNodeData(type) {
+      switch(type) {
+        case 'dialogue': return { speaker: '旁白', text: '', background: 'bg_street', character: 'char_heroine_normal', goto: null };
+        case 'choice': return { choices: [{ text: '选项1', affection: 0, goto: null }, { text: '选项2', affection: 0, goto: null }] };
+        case 'condition': return { conditionType: 'affection', conditionValue: 50, trueGoto: null, falseGoto: null };
+        case 'ending': return { endingType: 'normal' };
+        default: return {};
+      }
+    }
+    
+    function renderNode(node) {
+      const canvas = document.getElementById('canvasContent');
+      const chapter = state.chapters.find(c => c.id === state.currentChapterId);
+      const isStartNode = chapter && chapter.startNode === node.id;
+      const el = document.createElement('div');
+      el.className = 'node node-' + node.type + (isStartNode ? ' start-node' : '');
+      el.id = node.id;
+      el.style.left = node.x + 'px';
+      el.style.top = node.y + 'px';
+      
+      const typeLabels = { dialogue: '对话', choice: '选项', condition: '条件', ending: '结局' };
+      
+      // Node HTML
+      el.innerHTML = `
+        <div class="node-header">
+          <span>${typeLabels[node.type]}${isStartNode ? '<span class="start-badge">起始</span>' : ''}</span>
+          <span class="node-id-badge">${node.id}</span>
+        </div>
+        <div class="node-content">${getNodePreview(node)}</div>
+        ${node.type !== 'ending' ? '<div class="connection-point output" title="拖拽连接到其他节点"></div>' : ''}
+      `;
+      
+      el.onclick = (e) => {
+        e.stopPropagation();
+        if (state.connectingFrom) completeConnection(node.id);
+        else selectNode(node.id);
+      };
+      
+      makeDraggable(el, node);
+      
+      const outputPoint = el.querySelector('.connection-point.output');
+      if (outputPoint) {
+        outputPoint.onmousedown = (e) => {
+          e.stopPropagation();
+          // Start drag connection
+          state.isDraggingConnection = true;
+          state.dragStartNodeId = node.id;
+          state.dragStartChoiceIndex = null;
+          
+          const rect = outputPoint.getBoundingClientRect();
+          const canvasRect = document.getElementById('canvasContent').parentElement.getBoundingClientRect();
+          // Adjust for canvas scroll/position if needed, but here canvas is absolute in canvas-area
+          // canvasContent is the container.
+          // coordinates relative to canvasContent (0,0) which is (0,0) of canvas-area?
+          // canvasContent transform origin is 0,0.
+          
+          // Actually, we need coordinates relative to canvasContent to draw the SVG line inside it.
+          // But mousemove gives clientX/Y.
+          // We'll calculate start X/Y relative to canvas content.
+          const startX = node.x + 220; // Node width is 220, port is at right
+          const startY = node.y + el.offsetHeight - 20; // approximate
+          
+          // Better:
+          state.dragCurrentX = startX;
+          state.dragCurrentY = startY;
+          
+          // Create temp line
+          const svg = document.getElementById('connectionSvg');
+          const line = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+          line.id = 'tempConnectionLine';
+          line.setAttribute('class', 'temp-connection-line');
+          line.setAttribute('d', `M ${startX} ${startY} L ${startX} ${startY}`);
+          svg.appendChild(line);
+        };
+      }
+      
+      canvas.appendChild(el);
+    }
+
+    function getNodePreview(node) {
+      switch(node.type) {
+        case 'dialogue': return node.data.speaker ? node.data.speaker + ': ' + (node.data.text || '').substring(0, 15) + '...' : '未设置';
+        case 'choice': return node.data.choices.length + ' 个选项';
+        case 'condition': return '好感度 ≥ ' + node.data.conditionValue;
+        case 'ending': const labels = { good: '好结局', normal: '普通结局', bad: '坏结局' }; return labels[node.data.endingType] || '普通结局';
+        default: return '';
+      }
+    }
+    
+    function makeDraggable(el, node) {
+      let isDragging = false;
+      let startX, startY, startLeft, startTop;
+      el.onmousedown = (e) => {
+        if (e.target.classList.contains('connection-point')) return;
+        isDragging = true;
+        startX = e.clientX;
+        startY = e.clientY;
+        startLeft = node.x;
+        startTop = node.y;
+        el.style.zIndex = 100;
+      };
+      document.addEventListener('mousemove', (e) => {
+        if (!isDragging) return;
+        const dx = e.clientX - startX;
+        const dy = e.clientY - startY;
+        node.x = Math.max(0, startLeft + dx);
+        node.y = Math.max(50, startTop + dy);
+        el.style.left = node.x + 'px';
+        el.style.top = node.y + 'px';
+        updateConnections();
+      });
+      document.addEventListener('mouseup', () => {
+        if (isDragging) {
+          isDragging = false;
+          el.style.zIndex = 1;
+          scheduleSave();
+        }
+      });
+    }
+
+    // Drag Connection Handlers
+    function handleGlobalMouseMove(e) {
+      if (!state.isDraggingConnection) return;
+      
+      const svg = document.getElementById('connectionSvg');
+      const tempLine = document.getElementById('tempConnectionLine');
+      if (!tempLine) return;
+      
+      const canvasRect = svg.parentElement.getBoundingClientRect();
+      const mouseX = e.clientX - canvasRect.left;
+      const mouseY = e.clientY - canvasRect.top;
+      
+      // Get start pos
+      const fromNode = getCurrentNodes().find(n => n.id === state.dragStartNodeId);
+      if (!fromNode) return;
+      
+      // Recalculate start pos accurately
+      const startX = fromNode.x + 220; // right edge
+      const startY = fromNode.y + document.getElementById(fromNode.id).offsetHeight - 17; // port pos
+      
+      tempLine.setAttribute('d', `M ${startX} ${startY} L ${mouseX} ${mouseY}`);
+    }
+
+    function handleGlobalMouseUp(e) {
+      if (!state.isDraggingConnection) return;
+      
+      state.isDraggingConnection = false;
+      const tempLine = document.getElementById('tempConnectionLine');
+      if (tempLine) tempLine.remove();
+      
+      // Check if dropped on a node
+      const targetEl = e.target.closest('.node');
+      if (targetEl && targetEl.id !== state.dragStartNodeId) {
+        completeDragConnection(targetEl.id);
+      }
+    }
+    
+    function completeDragConnection(toId) {
+      const fromId = state.dragStartNodeId;
+      const nodes = getCurrentNodes();
+      const fromNode = nodes.find(n => n.id === fromId);
+      if (!fromNode) return;
+      
+      // Default behavior for simple drag:
+      // If choice node, we can't easily drag from the main port to specific choice without UI.
+      // But user said "drag line to connect".
+      // For choice nodes, we usually have ports PER choice.
+      // My current UI only has one main output port for non-ending nodes.
+      // And Choice buttons have "Connect" buttons in property panel.
+      // To support drag for choices, we'd need visual ports on the node body for each choice.
+      // The current UI simplifies choice connections to Property Panel.
+      // I'll support drag for Dialogue/Condition (main output) to Target.
+      
+      if (fromNode.type === 'dialogue') {
+        fromNode.data.goto = toId;
+      } else if (fromNode.type === 'condition') {
+        // Condition has true/false paths. Dragging from main port is ambiguous.
+        // Maybe default to True? Or ask?
+        // For now, let's just default to 'trueGoto' or show alert?
+        // Or maybe I should add ports for conditions on the node.
+        // Given constraints, I'll default to 'goto' if it exists (it doesn't for condition),
+        // or just set 'trueGoto' as default.
+        fromNode.data.trueGoto = toId; 
+      } else if (fromNode.type === 'choice') {
+        // Choice has multiple outputs. Ambiguous.
+        // I'll leave choice connections to the property panel for now, 
+        // or connect the *first* empty choice?
+        // Let's just do nothing for choice/condition to avoid confusion, or log it.
+        // Actually, dialogue is the most common.
+      }
+      
+      updateConnections();
+      renderPropertyPanel(fromNode);
+      scheduleSave();
+    }
+
+    // Legacy Connection Logic (Keep for Property Panel buttons)
+    function startConnection(fromId, choiceIndex) {
+      state.connectingFrom = fromId;
+      state.connectingFromChoice = choiceIndex;
+      document.querySelectorAll('.node').forEach(n => n.classList.add('connecting'));
+      document.getElementById(fromId).classList.add('selected');
+    }
+
+    function completeConnection(toId) {
+      if (!state.connectingFrom || state.connectingFrom === toId) { cancelConnection(); return; }
+      const nodes = getCurrentNodes();
+      const fromNode = nodes.find(n => n.id === state.connectingFrom);
+      if (!fromNode) { cancelConnection(); return; }
+      
+      if (fromNode.type === 'choice' && state.connectingFromChoice !== null) {
+        fromNode.data.choices[state.connectingFromChoice].goto = toId;
+      } else if (fromNode.type === 'condition') {
+        if (state.connectingFromChoice === 'true') fromNode.data.trueGoto = toId;
+        else if (state.connectingFromChoice === 'false') fromNode.data.falseGoto = toId;
+        else fromNode.data.goto = toId;
+      } else if (fromNode.type === 'dialogue') {
+        fromNode.data.goto = toId;
+      }
+      
+      cancelConnection();
+      updateConnections();
+      renderPropertyPanel(fromNode);
+      scheduleSave();
+    }
+
+    function cancelConnection() {
+      state.connectingFrom = null;
+      state.connectingFromChoice = null;
+      document.querySelectorAll('.node').forEach(n => n.classList.remove('connecting'));
+    }
+
+    function updateConnections() {
+      const svg = document.getElementById('connectionSvg');
+      if (!svg) return;
+      svg.innerHTML = '';
+      const nodes = getCurrentNodes();
+      nodes.forEach(node => {
+        if (node.type === 'dialogue' && node.data.goto) drawConnection(node.id, node.data.goto);
+        else if (node.type === 'choice') {
+          node.data.choices.forEach((choice, index) => { if (choice.goto) drawConnection(node.id, choice.goto, index); });
+        } else if (node.type === 'condition') {
+          if (node.data.trueGoto) drawConnection(node.id, node.data.trueGoto, '是', '#00b894');
+          if (node.data.falseGoto) drawConnection(node.id, node.data.falseGoto, '否', '#ff6b6b');
+        }
+      });
+    }
+
+    function drawConnection(fromId, toId, label, color) {
+      const fromEl = document.getElementById(fromId);
+      const toEl = document.getElementById(toId);
+      const svg = document.getElementById('connectionSvg');
+      if (!fromEl || !toEl || !svg) return;
+      
+      const fromRect = fromEl.getBoundingClientRect();
+      const toRect = toEl.getBoundingClientRect();
+      const canvasRect = svg.parentElement.getBoundingClientRect();
+      
+      // Calculate start/end relative to canvas container
+      const x1 = fromRect.left + fromRect.width - canvasRect.left - 10; // Right side
+      const y1 = fromRect.top + fromRect.height - 20 - canvasRect.top; // Bottom-right port
+      
+      // Target is usually the top-left or left side of target node
+      const x2 = toRect.left - canvasRect.left;
+      const y2 = toRect.top + toRect.height / 2 - canvasRect.top;
+      
+      // Simple straight line
+      const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      path.setAttribute('d', `M ${x1} ${y1} L ${x2} ${y2}`);
+      path.setAttribute('class', 'connection-line');
+      path.setAttribute('stroke', color || '#4ecdc4');
+      svg.appendChild(path);
+      
+      if (label !== undefined && label !== null) {
+        const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        text.setAttribute('x', (x1 + x2) / 2);
+        text.setAttribute('y', (y1 + y2) / 2 - 5);
+        text.setAttribute('fill', color || '#4ecdc4');
+        text.setAttribute('font-size', '10');
+        text.setAttribute('text-anchor', 'middle');
+        text.textContent = label;
+        svg.appendChild(text);
+      }
+    }
+
+    // ... [Select/Delete/Property Logic - Mostly same] ...
+    function selectNode(id) {
+      cancelConnection();
+      document.querySelectorAll('.node').forEach(n => n.classList.remove('selected'));
+      const nodes = getCurrentNodes();
+      const node = nodes.find(n => n.id === id);
+      if (node) {
+        state.selectedNode = node;
+        document.getElementById(id).classList.add('selected');
+        renderPropertyPanel(node);
+      }
+    }
+    
+    function clearPropertyPanel() {
+      document.getElementById('propertyPanel').innerHTML = `<div class="panel-title">属性编辑</div><div class="empty-state"><div class="icon">📝</div>选择一个节点进行编辑</div>`;
+    }
+
+    function renderPropertyPanel(node) {
+      const panel = document.getElementById('propertyPanel');
+      const nodes = getCurrentNodes();
+      const chapter = state.chapters.find(c => c.id === state.currentChapterId);
+      const isStartNode = chapter && chapter.startNode === node.id;
+      
+      let html = '<div class="panel-title">属性编辑</div>';
+      html += `<div class="property-section"><div class="property-label">节点 ID：</div><input class="property-input" value="${node.id}" onchange="updateNodeId(this.value)"></div>`;
+      if (node.type !== 'ending') {
+        html += `<div class="property-section"><label style="display:flex;align-items:center;gap:8px;cursor:pointer;"><input type="checkbox" ${isStartNode ? 'checked' : ''} onchange="setAsStartNode('${node.id}', this.checked)"><span>设为章节起始节点</span></label></div>`;
+      }
+      
+      // ... [Switch case for node types - keep mostly same but use updated classes/functions] ...
+      // I'll condense this for brevity in thought but write fully in file
+      
+      switch(node.type) {
+        case 'dialogue':
+          html += `
+            <div class="property-section"><div class="property-label">说话人：</div><div class="goto-selector"><select class="property-select" onchange="updateNodeData('speaker', this.value)">${buildSpeakerOptions(node.data.speaker)}</select><button class="btn btn-connect" onclick="assetFilterType='character'; showAssetModal()">资源</button></div></div>
+            <div class="property-section"><div class="property-label">对话内容：</div><textarea class="property-textarea" oninput="updateNodeData('text', this.value)">${node.data.text}</textarea></div>
+            <div class="property-section"><div class="property-label">背景图片：</div><div class="goto-selector"><select class="property-select" onchange="updateNodeData('background', this.value)">${buildBackgroundOptions(node.data.background)}</select><button class="btn btn-connect" onclick="assetFilterType='background'; showAssetModal()">资源</button></div></div>
+            <div class="property-section"><div class="property-label">角色立绘：</div><div class="goto-selector"><select class="property-select" onchange="updateNodeData('character', this.value)">${buildCharacterOptions(node.data.character)}</select><button class="btn btn-connect" onclick="assetFilterType='character'; showAssetModal()">资源</button></div></div>
+            <div class="property-section"><div class="property-label">下一个节点：</div><div class="goto-selector"><select class="property-select" onchange="updateNodeData('goto', this.value)"><option value="">-- 无 --</option>${nodes.filter(n => n.id !== node.id).map(n => `<option value="${n.id}" ${node.data.goto === n.id ? 'selected' : ''}>${n.id} (${n.type})</option>`).join('')}</select><button class="btn btn-connect" onclick="startConnection('${node.id}', null)">连接</button></div></div>
+          `;
+          break;
+        case 'choice':
+          html += '<div class="property-section"><div class="property-label">选项列表：</div></div>';
+          node.data.choices.forEach((choice, index) => {
+            html += `<div class="property-section choice-item"><div class="property-label">选项 ${index + 1}：</div><input value="${choice.text}" oninput="updateChoice(${index}, 'text', this.value)"><div class="property-label">好感度变化：</div><input type="number" value="${choice.affection}" oninput="updateChoice(${index}, 'affection', parseInt(this.value))"><div class="property-label">跳转节点：</div><div class="goto-selector"><select class="property-select" onchange="updateChoice(${index}, 'goto', this.value)"><option value="">-- 无 --</option>${nodes.filter(n => n.id !== node.id).map(n => `<option value="${n.id}" ${choice.goto === n.id ? 'selected' : ''}>${n.id} (${n.type})</option>`).join('')}</select><button class="btn btn-connect" onclick="startConnection('${node.id}', ${index})">连接</button></div></div>`;
+          });
+          html += `<div class="property-section"><button class="btn btn-add" style="width:100%" onclick="addChoice()">+ 添加选项</button></div>`;
+          break;
+        case 'condition':
+          html += `<div class="property-section"><div class="property-label">条件类型：</div><select class="property-select" onchange="updateNodeData('conditionType', this.value)"><option value="affection" ${node.data.conditionType === 'affection' ? 'selected' : ''}>好感度判断</option></select></div>
+                   <div class="property-section"><div class="property-label">好感度阈值：</div><input type="number" class="property-input" value="${node.data.conditionValue}" oninput="updateNodeData('conditionValue', parseInt(this.value))"></div>
+                   <div class="property-section"><div class="property-label">条件满足时跳转：</div><div class="goto-selector"><select class="property-select" onchange="updateNodeData('trueGoto', this.value)"><option value="">-- 无 --</option>${nodes.filter(n => n.id !== node.id).map(n => `<option value="${n.id}" ${node.data.trueGoto === n.id ? 'selected' : ''}>${n.id} (${n.type})</option>`).join('')}</select><button class="btn btn-connect" onclick="startConnection('${node.id}', 'true')">连接</button></div></div>
+                   <div class="property-section"><div class="property-label">条件不满足时跳转：</div><div class="goto-selector"><select class="property-select" onchange="updateNodeData('falseGoto', this.value)"><option value="">-- 无 --</option>${nodes.filter(n => n.id !== node.id).map(n => `<option value="${n.id}" ${node.data.falseGoto === n.id ? 'selected' : ''}>${n.id} (${n.type})</option>`).join('')}</select><button class="btn btn-connect" onclick="startConnection('${node.id}', 'false')">连接</button></div></div>`;
+          break;
+        case 'ending':
+          html += `<div class="property-section"><div class="property-label">结局类型：</div><select class="property-select" onchange="updateNodeData('endingType', this.value)"><option value="good" ${node.data.endingType === 'good' ? 'selected' : ''}>好结局</option><option value="normal" ${node.data.endingType === 'normal' ? 'selected' : ''}>普通结局</option><option value="bad" ${node.data.endingType === 'bad' ? 'selected' : ''}>坏结局</option></select></div>`;
+          break;
+      }
+      html += `<div class="property-section"><button class="btn btn-delete" style="width:100%" onclick="showDeleteNodeModal('${node.id}')">删除节点</button></div>`;
+      panel.innerHTML = html;
+    }
+
+    function setAsStartNode(nodeId, isStart) {
+      const chapter = state.chapters.find(c => c.id === state.currentChapterId);
+      if (chapter) { chapter.startNode = isStart ? nodeId : null; clearCanvas(); loadChapterNodes(state.currentChapterId); renderPropertyPanel(state.selectedNode); scheduleSave(); }
+    }
+
+    function updateNodeId(newId) {
+      if (!state.selectedNode || !newId || newId === state.selectedNode.id) return;
+      const oldId = state.selectedNode.id;
+      const nodes = getCurrentNodes();
+      nodes.forEach(node => {
+        if (node.data.goto === oldId) node.data.goto = newId;
+        if (node.data.trueGoto === oldId) node.data.trueGoto = newId;
+        if (node.data.falseGoto === oldId) node.data.falseGoto = newId;
+        if (node.data.choices) node.data.choices.forEach(c => { if (c.goto === oldId) c.goto = newId; });
+      });
+      const chapter = state.chapters.find(c => c.id === state.currentChapterId);
+      if (chapter && chapter.startNode === oldId) chapter.startNode = newId;
+      state.selectedNode.id = newId;
+      document.getElementById(oldId).id = newId;
+      document.getElementById(newId).querySelector('.node-id-badge').textContent = newId;
+      updateConnections(); scheduleSave();
+    }
+
+    function updateNodeData(key, value) { if (state.selectedNode) { state.selectedNode.data[key] = value; updateNodePreview(state.selectedNode); updateConnections(); scheduleSave(); } }
+    function updateChoice(index, key, value) { if (state.selectedNode && state.selectedNode.data.choices) { state.selectedNode.data.choices[index][key] = value; updateConnections(); scheduleSave(); } }
+    function addChoice() { if (state.selectedNode && state.selectedNode.data.choices) { state.selectedNode.data.choices.push({ text: '新选项', affection: 0, goto: null }); renderPropertyPanel(state.selectedNode); updateNodePreview(state.selectedNode); scheduleSave(); } }
+    function updateNodePreview(node) { const el = document.getElementById(node.id); if (el) el.querySelector('.node-content').textContent = getNodePreview(node); }
+    
+    function showDeleteNodeModal(nodeId) { state.deleteNodeId = nodeId; document.getElementById('deleteNodeModal').classList.remove('hidden'); }
+    function hideDeleteNodeModal() { document.getElementById('deleteNodeModal').classList.add('hidden'); state.deleteNodeId = null; }
+    function confirmDeleteNode() {
+      const nodeId = state.deleteNodeId; if (!nodeId) return;
+      const nodes = getCurrentNodes();
+      nodes.forEach(node => {
+        if (node.data.goto === nodeId) node.data.goto = null;
+        if (node.data.trueGoto === nodeId) node.data.trueGoto = null;
+        if (node.data.falseGoto === nodeId) node.data.falseGoto = null;
+        if (node.data.choices) node.data.choices.forEach(c => { if (c.goto === nodeId) c.goto = null; });
+      });
+      const chapter = state.chapters.find(c => c.id === state.currentChapterId);
+      if (chapter && chapter.startNode === nodeId) chapter.startNode = null;
+      const index = nodes.findIndex(n => n.id === nodeId);
+      if (index > -1) {
+        nodes.splice(index, 1);
+        setCurrentNodes(nodes);
+        document.getElementById(nodeId).remove();
+        state.selectedNode = null;
+        clearPropertyPanel(); updateConnections(); updateChapterInfo(); renderChapterList(); scheduleSave();
+      }
+      hideDeleteNodeModal();
+    }
+
+    function previewStory() {
+      if (!state.currentChapterId) { alert('请先选择一个章节'); return; }
+      saveData();
+      window.location.href = '/game.html?preview=true&chapter=' + state.currentChapterId;
+    }
+    
+    function exportStory() {
+      const yaml = generateYaml();
+      const blob = new Blob([yaml], { type: 'text/yaml' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href = url; a.download = 'story.yaml'; a.click(); URL.revokeObjectURL(url);
+    }
+    
+    function generateYaml() {
+      let yaml = 'chapters:\n';
+      state.chapters.forEach((chapter, index) => {
+        const nodes = state.nodesByChapter[chapter.id] || [];
+        const nextChapter = state.chapters[index + 1];
+        yaml += `  ${chapter.id}:\n    name: ${chapter.name}\n`;
+        if (nextChapter) yaml += `    next: ${nextChapter.id}\n`;
+        if (chapter.startNode) yaml += `    start_node: ${chapter.startNode}\n`;
+        yaml += `    scenes:\n`;
+        nodes.forEach(node => {
+          yaml += `      - id: ${node.id}\n`;
+          if (node.type === 'dialogue') {
+            yaml += `        background: ${node.data.background}\n        character: ${node.data.character}\n        speaker: "${node.data.speaker}"\n        text: |\n          ${node.data.text}\n`;
+            if (node.data.goto) yaml += `        goto: ${node.data.goto}\n`;
+          } else if (node.type === 'choice') {
+            yaml += `        type: choice\n        options:\n`;
+            node.data.choices.forEach(c => {
+              yaml += `          - text: "${c.text}"\n`;
+              if (c.affection) yaml += `            affection: ${c.affection}\n`;
+              if (c.goto) yaml += `            goto: ${c.goto}\n`;
+            });
+          } else if (node.type === 'condition') {
+            yaml += `        type: condition\n        check: affection >= ${node.data.conditionValue}\n`;
+            if (node.data.trueGoto) yaml += `        true_goto: ${node.data.trueGoto}\n`;
+            if (node.data.falseGoto) yaml += `        false_goto: ${node.data.falseGoto}\n`;
+          } else if (node.type === 'ending') {
+            yaml += `        type: ending\n        ending: ${node.data.endingType}\n`;
+          }
+        });
+      });
+      return yaml;
+    }
+
+    function goBack() { window.location.href = '/'; }
+
+    document.addEventListener('click', (e) => {
+      if (e.target.classList.contains('canvas-content') || e.target.classList.contains('canvas-area') || e.target.tagName === 'svg') {
+        if (state.connectingFrom) cancelConnection();
+        else { state.selectedNode = null; document.querySelectorAll('.node').forEach(n => n.classList.remove('selected')); clearPropertyPanel(); }
+      }
+    });
+
+    window.addEventListener('message', (event) => {
+      if (event.data && event.data.type === 'REQUEST_YAML') {
+        const yaml = generateYaml();
+        if (event.source && typeof event.source.postMessage === 'function') event.source.postMessage({ type: 'EDITOR_YAML', yaml }, event.origin || '*');
+      }
+    });
+    
+    window.addEventListener('beforeunload', (e) => { if (state.dirty) { e.preventDefault(); e.returnValue = ''; } });
+
+    init();
+  </script>
+</body>
+</html>

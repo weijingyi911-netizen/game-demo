@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>恋爱冒险游戏</title>
+  <link rel="stylesheet" href="sdv-theme.css">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: var(--sdv-font-family);
+      background: #1a1a2e;
+      overflow: hidden;
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #game-container {
+      width: 1280px;
+      height: 720px;
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%) scale(1);
+      transform-origin: center center;
+      overflow: hidden;
+      background: #0a0a0f;
+      image-rendering: pixelated;
+      border: 8px solid var(--sdv-border-outline);
+      box-shadow: 0 0 0 4px var(--sdv-border-light), 0 0 20px rgba(0,0,0,0.5);
+    }
+
+    /* ... background-layer, character-layer styles unchanged ... */
+    #background-layer {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 1;
+    }
+
+    #background-layer img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    #character-layer {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 2;
+      display: flex;
+      justify-content: flex-end;
+      align-items: flex-end;
+      padding-bottom: 220px;
+      padding-right: 100px;
+    }
+
+    #character-layer img {
+      max-height: 500px;
+      max-width: 300px;
+      object-fit: contain;
+      transition: opacity 0.3s ease;
+    }
+
+    #ui-layer {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 10;
+    }
+
+    #top-bar {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 70px;
+      padding: 10px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: linear-gradient(to bottom, rgba(0,0,0,0.4), transparent);
+    }
+
+    #dev-btn, #home-btn, #evidence-btn {
+      font-family: var(--sdv-font-family);
+      font-size: 14px;
+      font-weight: bold;
+      text-transform: uppercase;
+      margin-right: 10px;
+      background-color: var(--sdv-bg-panel);
+      border: 3px solid var(--sdv-border-outline);
+      color: var(--sdv-text-dark);
+      padding: 10px 15px;
+      border-radius: 0;
+      box-shadow: 4px 4px 0 rgba(0,0,0,0.3);
+      cursor: pointer;
+      transition: transform 0.1s;
+    }
+
+    #dev-btn:hover, #home-btn:hover, #evidence-btn:hover {
+      transform: scale(1.05);
+      background-color: var(--sdv-primary-light);
+    }
+
+    #dev-btn:active, #home-btn:active, #evidence-btn:active {
+      transform: translateY(4px);
+      box-shadow: none;
+    }
+    
+    #dev-btn {
+      background-color: var(--sdv-ui-blue);
+      color: var(--sdv-text-light);
+    }
+    
+    #home-btn {
+      background-color: var(--sdv-danger);
+      color: var(--sdv-text-light);
+    }
+
+    #affection-container {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: rgba(0,0,0,0.5);
+      padding: 8px 15px;
+      border-radius: 4px;
+      border: 2px solid var(--sdv-border-outline);
+    }
+
+    #affection-label {
+      color: var(--sdv-text-light);
+      font-size: 14px;
+      font-weight: bold;
+      text-shadow: 1px 1px 0 #000;
+    }
+
+    #affection-bar-bg {
+      width: 150px;
+      height: 24px;
+      background: #333;
+      border: 3px solid var(--sdv-border-outline);
+      border-radius: 0;
+      position: relative;
+    }
+
+    #affection-bar {
+      height: 100%;
+      background: linear-gradient(to right, #ff6b6b, #ff8e8e);
+      transition: width 0.3s ease;
+      box-shadow: inset 0 -4px 0 rgba(0,0,0,0.2);
+    }
+
+    #affection-value {
+      color: var(--sdv-text-light);
+      font-size: 14px;
+      font-weight: bold;
+      min-width: 30px;
+      text-shadow: 1px 1px 0 #000;
+    }
+
+    #dialogue-container {
+      position: absolute;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 90%;
+      max-width: 1000px;
+    }
+
+    #dialogue-box {
+      background-color: var(--sdv-bg-panel);
+      border: 4px solid var(--sdv-border-outline);
+      box-shadow: 
+        inset 4px 4px 0px var(--sdv-border-light),
+        inset -4px -4px 0px var(--sdv-border-dark),
+        8px 8px 0px rgba(0,0,0,0.3);
+      padding: 30px 40px;
+      min-height: 180px;
+      position: relative;
+      image-rendering: pixelated;
+    }
+
+    #speaker-name {
+      position: absolute;
+      top: -25px;
+      left: 20px;
+      background-color: var(--sdv-primary);
+      border: 4px solid var(--sdv-border-outline);
+      color: var(--sdv-text-light);
+      padding: 8px 20px;
+      font-size: 16px;
+      font-weight: bold;
+      text-shadow: 1px 1px 0 rgba(0,0,0,0.3);
+      box-shadow: 4px 4px 0 rgba(0,0,0,0.3);
+      border-radius: 0;
+    }
+
+    #dialogue-text {
+      color: var(--sdv-text-dark);
+      font-size: 18px;
+      line-height: 1.8;
+      margin-top: 10px;
+      min-height: 80px;
+      font-family: var(--sdv-font-family);
+      font-weight: bold;
+    }
+
+    #continue-indicator {
+      position: absolute;
+      bottom: 15px;
+      right: 20px;
+      color: var(--sdv-primary-dark);
+      font-size: 14px;
+      animation: blink 1s infinite;
+      font-weight: bold;
+    }
+
+    @keyframes blink {
+      0%, 50% { opacity: 1; }
+      51%, 100% { opacity: 0; }
+    }
+
+    #choice-container {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      display: none;
+      flex-direction: column;
+      gap: 20px;
+      z-index: 20;
+      width: 60%;
+    }
+
+    .choice-btn {
+      background-color: var(--sdv-bg-panel);
+      border: 4px solid var(--sdv-border-outline);
+      color: var(--sdv-text-dark);
+      padding: 20px;
+      font-size: 18px;
+      font-weight: bold;
+      font-family: var(--sdv-font-family);
+      cursor: pointer;
+      text-align: left;
+      transition: all 0.1s;
+      box-shadow: 6px 6px 0 rgba(0,0,0,0.3);
+      position: relative;
+    }
+
+    .choice-btn:hover {
+      background-color: #fff;
+      transform: translate(-2px, -2px);
+      box-shadow: 8px 8px 0 rgba(0,0,0,0.3);
+    }
+    
+    .choice-btn:active {
+      transform: translate(2px, 2px);
+      box-shadow: 2px 2px 0 rgba(0,0,0,0.3);
+    }
+
+    .choice-btn::before {
+      content: '>';
+      color: var(--sdv-primary);
+      margin-right: 10px;
+      opacity: 0;
+      transition: opacity 0.1s;
+    }
+
+    .choice-btn:hover::before {
+      opacity: 1;
+    }
+
+    #menu-overlay, #ending-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(2px);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 100;
+    }
+    
+    #ending-overlay {
+      flex-direction: column;
+    }
+
+    #menu-panel {
+      background-color: var(--sdv-bg-panel);
+      border: 4px solid var(--sdv-border-outline);
+      box-shadow: 
+        inset 4px 4px 0px var(--sdv-border-light),
+        inset -4px -4px 0px var(--sdv-border-dark),
+        10px 10px 0px rgba(0,0,0,0.4);
+      padding: 40px 60px;
+      text-align: center;
+      min-width: 400px;
+    }
+
+    #menu-title {
+      color: var(--sdv-text-dark);
+      font-size: 24px;
+      font-weight: bold;
+      margin-bottom: 30px;
+      text-transform: uppercase;
+      border-bottom: 2px solid var(--sdv-border-dark);
+      padding-bottom: 10px;
+    }
+
+    .menu-action-btn {
+      display: block;
+      width: 100%;
+      margin: 15px 0;
+      padding: 15px;
+      border: 3px solid var(--sdv-border-outline);
+      background-color: var(--sdv-ui-blue);
+      color: var(--sdv-text-light);
+      font-family: var(--sdv-font-family);
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+      box-shadow: 4px 4px 0 rgba(0,0,0,0.3);
+      transition: transform 0.1s;
+    }
+    
+    .menu-action-btn:hover {
+      background-color: var(--sdv-ui-blue-light);
+      transform: translateY(-2px);
+    }
+    
+    .menu-action-btn:active {
+      transform: translateY(2px);
+      box-shadow: none;
+    }
+
+    #close-menu-btn {
+      background-color: var(--sdv-danger);
+      margin-top: 30px;
+    }
+    
+    #close-menu-btn:hover {
+      background-color: #e57373;
+    }
+
+    #ending-title {
+      font-size: 40px;
+      color: var(--sdv-warning);
+      margin-bottom: 30px;
+      text-shadow: 4px 4px 0 #000;
+      font-family: var(--sdv-font-family);
+      font-weight: bold;
+    }
+
+    #ending-desc {
+      font-size: 18px;
+      color: var(--sdv-text-light);
+      margin-bottom: 50px;
+      text-align: center;
+      max-width: 600px;
+      line-height: 1.6;
+      text-shadow: 2px 2px 0 #000;
+      background: rgba(0,0,0,0.5);
+      padding: 20px;
+      border: 2px solid var(--sdv-border-outline);
+      font-weight: bold;
+    }
+
+    #restart-btn {
+      background-color: var(--sdv-primary);
+      border: 4px solid var(--sdv-border-outline);
+      color: var(--sdv-text-light);
+      padding: 20px 40px;
+      font-size: 16px;
+      font-family: var(--sdv-font-family);
+      font-weight: bold;
+      cursor: pointer;
+      box-shadow: 6px 6px 0 rgba(0,0,0,0.4);
+      transition: transform 0.1s;
+    }
+
+    #restart-btn:hover {
+      background-color: var(--sdv-primary-light);
+      transform: scale(1.05);
+    }
+
+    #message-toast {
+      position: absolute;
+      top: 20%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background-color: var(--sdv-bg-panel);
+      border: 3px solid var(--sdv-border-outline);
+      padding: 15px 30px;
+      color: var(--sdv-text-dark);
+      font-size: 14px;
+      font-family: var(--sdv-font-family);
+      font-weight: bold;
+      display: none;
+      z-index: 200;
+      box-shadow: 4px 4px 0 rgba(0,0,0,0.3);
+    }
+
+    .hidden {
+      display: none !important;
+    }
+  </style>
+</head>
+<body>
+  <div id="game-container">
+    <div id="background-layer">
+      <img id="background-img" src="https://placehold.co/1280x720/2d3436/ffffff?text=Loading" alt="background">
+    </div>
+
+    <div id="character-layer">
+      <img id="character-img" src="" alt="character" style="display: none;">
+    </div>
+
+    <div id="ui-layer">
+      <div id="top-bar">
+        <div>
+          <button id="evidence-btn">证据列表</button>
+          <button id="dev-btn">进行开发</button>
+          <button id="home-btn">回到首页</button>
+        </div>
+        <div id="affection-container">
+          <span id="affection-label">好感度:</span>
+          <div id="affection-bar-bg">
+            <div id="affection-bar" style="width: 0%"></div>
+          </div>
+          <span id="affection-value">0</span>
+        </div>
+      </div>
+
+      <div id="dialogue-container">
+        <div id="dialogue-box">
+          <div id="speaker-name">???</div>
+          <div id="dialogue-text">正在加载...</div>
+          <div id="continue-indicator">▼ 点击继续</div>
+        </div>
+      </div>
+
+      <div id="choice-container"></div>
+    </div>
+
+    <div id="menu-overlay">
+      <div id="menu-panel">
+        <div id="menu-title">菜单</div>
+        <button class="menu-action-btn" id="save-btn">保存游戏</button>
+        <button class="menu-action-btn" id="title-btn">返回标题</button>
+        <button class="menu-action-btn" id="close-menu-btn">关闭</button>
+      </div>
+    </div>
+
+    <div id="ending-overlay">
+      <div id="ending-title">结局</div>
+      <div id="ending-desc">描述</div>
+      <button id="restart-btn">重新开始</button>
+    </div>
+
+    <div id="message-toast"></div>
+  </div>
+
+  <script type="module">
+    import { GameEngine } from './src/game/GameEngine.js'
+
+    const params = new URLSearchParams(window.location.search)
+    const previewMode = params.get('preview') === 'true'
+    const chapterId = params.get('chapter') || 'start'
+
+    const engine = new GameEngine({
+      previewMode,
+      chapterId,
+      elements: {
+        background: document.getElementById('background-img'),
+        character: document.getElementById('character-img'),
+        characterLayer: document.getElementById('character-layer'),
+        speakerName: document.getElementById('speaker-name'),
+        dialogueText: document.getElementById('dialogue-text'),
+        dialogueBox: document.getElementById('dialogue-box'),
+        dialogueContainer: document.getElementById('dialogue-container'),
+        choiceContainer: document.getElementById('choice-container'),
+        affectionBar: document.getElementById('affection-bar'),
+        affectionValue: document.getElementById('affection-value'),
+        menuOverlay: document.getElementById('menu-overlay'),
+        endingOverlay: document.getElementById('ending-overlay'),
+        endingTitle: document.getElementById('ending-title'),
+        endingDesc: document.getElementById('ending-desc'),
+        messageToast: document.getElementById('message-toast')
+      }
+    })
+
+    document.getElementById('dev-btn').addEventListener('click', () => {
+      window.location.href = '/editor.html'
+    })
+
+    document.getElementById('home-btn').addEventListener('click', () => {
+      window.location.href = '/'
+    })
+
+    document.getElementById('evidence-btn').addEventListener('click', () => {
+      engine.showEvidence()
+    })
+
+    document.getElementById('save-btn').addEventListener('click', () => {
+      engine.save()
+    })
+
+    document.getElementById('title-btn').addEventListener('click', () => {
+      window.location.href = '/'
+    })
+
+    document.getElementById('close-menu-btn').addEventListener('click', () => {
+      engine.hideMenu()
+    })
+
+    document.getElementById('restart-btn').addEventListener('click', () => {
+      localStorage.removeItem('gameSave')
+      window.location.href = '/'
+    })
+
+    document.getElementById('dialogue-container').addEventListener('click', () => {
+      engine.advance()
+    })
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === ' ' || e.key === 'Enter') {
+        engine.advance()
+      }
+    })
+
+    function resizeGame() {
+      const baseWidth = 1280
+      const baseHeight = 720
+      const scale = Math.min(window.innerWidth / baseWidth, window.innerHeight / baseHeight)
+      const game = document.getElementById('game-container')
+      game.style.transform = `translate(-50%, -50%) scale(${scale})`
+    }
+    
+    window.addEventListener('resize', resizeGame)
+    resizeGame()
+    
+    engine.start()
+  </script>
+</body>
+</html>

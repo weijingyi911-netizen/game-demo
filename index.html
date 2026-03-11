@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>恋爱冒险游戏</title>
+  <link rel="stylesheet" href="sdv-theme.css">
+  <style>
+    body {
+      background: linear-gradient(to bottom, #87CEEB 0%, #E0F7FA 100%);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      overflow: hidden;
+      font-family: var(--sdv-font-family);
+      margin: 0;
+    }
+    
+    /* Pixel Art Clouds Animation */
+    .clouds {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 0;
+      background-image: 
+        radial-gradient(circle 20px at 20% 20%, white 99%, transparent 100%),
+        radial-gradient(circle 30px at 25% 25%, white 99%, transparent 100%),
+        radial-gradient(circle 15px at 15% 25%, white 99%, transparent 100%);
+      background-size: 500px 500px;
+      animation: moveClouds 60s linear infinite;
+      opacity: 0.6;
+    }
+    
+    @keyframes moveClouds {
+      from { background-position: 0 0; }
+      to { background-position: 500px 0; }
+    }
+    
+    /* Sun */
+    .sun {
+      position: absolute;
+      top: 50px;
+      right: 50px;
+      width: 80px;
+      height: 80px;
+      background: #FDB813;
+      border: 4px solid #F57C00;
+      box-shadow: 8px 8px 0 rgba(0,0,0,0.1);
+      z-index: 0;
+    }
+
+    .menu-container {
+      position: relative;
+      z-index: 10;
+      width: 400px;
+      padding: 40px;
+      text-align: center;
+    }
+    
+    h1 {
+      font-size: 36px;
+      color: var(--sdv-text-dark);
+      margin-bottom: 40px;
+      text-shadow: 2px 2px 0 rgba(255,255,255,0.5);
+      font-weight: bold;
+    }
+    
+    .menu-btn-group {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+    
+    .menu-btn-large {
+      padding: 20px;
+      font-size: 18px;
+      text-align: center;
+      text-decoration: none;
+      display: block;
+    }
+    
+    .footer {
+      position: absolute;
+      bottom: 20px;
+      width: 100%;
+      text-align: center;
+      color: var(--sdv-text-dark);
+      font-size: 12px;
+      opacity: 0.7;
+    }
+  </style>
+</head>
+<body>
+  <div class="clouds"></div>
+  <div class="sun"></div>
+  
+  <div class="menu-container pixel-box">
+    <h1>恋爱冒险游戏</h1>
+    
+    <div class="menu-btn-group">
+      <a href="/game.html" class="pixel-btn menu-btn-large">开始游戏</a>
+      <a href="/editor.html" class="pixel-btn menu-btn-large blue">进行开发</a>
+      <button onclick="location.href='/'" class="pixel-btn menu-btn-large red">回到首页</button>
+    </div>
+  </div>
+  
+  <div class="footer">v0.5.1 - Stardew Valley Style</div>
+</body>
+</html>

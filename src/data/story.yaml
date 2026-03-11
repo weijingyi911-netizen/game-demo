@@ -1,0 +1,323 @@
+chapters:
+  start:
+    name: 序章 - 相遇
+    next: chapter1
+    
+    scenes:
+      - background: bg_street
+        character: null
+        speaker: 旁白
+        text: |
+          这是一个阳光明媚的早晨，你像往常一样走在去咖啡店的路上。
+          突然，一个身影从转角冲了出来——
+
+      - background: bg_street
+        character: char_heroine_normal
+        speaker: ???
+        text: 哇啊！对不起对不起！我赶时间...诶？
+
+      - background: bg_street
+        character: char_heroine_normal
+        speaker: 小雪
+        text: 你是...新搬来的邻居吗？我叫小雪！
+
+      - type: choice
+        options:
+          - text: 是的，我刚搬来不久。你好！
+            affection: +5
+            flag: first_impression=friendly
+            goto: friendly_response
+
+          - text: 嗯...你撞到我了。
+            affection: -3
+            flag: first_impression=cold
+            goto: cold_response
+
+          - text: （微笑）没关系，你好像很着急？
+            affection: +10
+            flag: first_impression=kind
+            goto: kind_response
+
+      - id: friendly_response
+        background: bg_street
+        character: char_heroine_happy
+        speaker: 小雪
+        text: 太好了！以后我们就是朋友啦！我就在前面那家咖啡店打工哦~
+        goto: after_response
+
+      - id: cold_response
+        background: bg_street
+        character: char_heroine_shy
+        speaker: 小雪
+        text: 啊...真的对不起！我请你喝咖啡赔罪吧！
+        goto: after_response
+
+      - id: kind_response
+        background: bg_street
+        character: char_heroine_happy
+        speaker: 小雪
+        text: 嗯！我要去咖啡店打工，差点迟到了！你...要不要来喝杯咖啡？
+        goto: after_response
+
+      - id: after_response
+        background: bg_street
+        character: char_heroine_normal
+        speaker: 小雪
+        text: 那我先走啦！记得来找我玩哦！
+
+      - background: bg_street
+        character: null
+        speaker: 旁白
+        text: 看着她匆匆离去的背影，你决定...
+
+      - type: choice
+        options:
+          - text: 去咖啡店看看
+            affection: +5
+            flag: visited_cafe=true
+            goto: cafe_scene
+
+          - text: 回家休息
+            goto: home_scene
+
+      - id: cafe_scene
+        background: bg_cafe
+        character: null
+        speaker: 旁白
+        text: 你来到了那家咖啡店，透过玻璃窗，看到小雪正在忙碌地工作着。
+        goto: chapter_end
+
+      - id: home_scene
+        background: bg_street
+        character: null
+        speaker: 旁白
+        text: 你决定先回家休息，改天再去看看。
+        goto: chapter_end
+
+      - id: chapter_end
+        background: bg_cafe
+        character: null
+        speaker: 旁白
+        text: 【序章结束】
+
+
+  chapter1:
+    name: 第一章 - 了解
+    next: chapter2
+
+    scenes:
+      - background: bg_cafe
+        character: null
+        speaker: 旁白
+        text: 几天后，你又来到了咖啡店...
+
+      - background: bg_cafe
+        character: char_heroine_happy
+        speaker: 小雪
+        text: 欢迎光临！啊，是你！
+
+      - background: bg_cafe
+        character: char_heroine_normal
+        speaker: 小雪
+        text: 今天想喝点什么？我推荐我们的招牌拿铁~
+
+      - type: choice
+        options:
+          - text: 那就来一杯招牌拿铁吧
+            affection: +5
+            goto: order_latte
+
+          - text: 你有什么特别推荐的吗？
+            affection: +8
+            goto: order_special
+
+          - text: 只要一杯美式就好
+            affection: 0
+            goto: order_americano
+
+      - id: order_latte
+        background: bg_cafe
+        character: char_heroine_happy
+        speaker: 小雪
+        text: 好的！我给你用心做一杯，保证好喝！
+        goto: after_order
+
+      - id: order_special
+        background: bg_cafe
+        character: char_heroine_happy
+        speaker: 小雪
+        text: 嗯...既然你问了，我给你做一杯我的特调吧！这是我的秘密配方哦~
+        goto: after_order
+
+      - id: order_americano
+        background: bg_cafe
+        character: char_heroine_normal
+        speaker: 小雪
+        text: 好的，美式一杯。你看起来很累呢，要注意休息哦。
+        goto: after_order
+
+      - id: after_order
+        background: bg_cafe
+        character: char_heroine_normal
+        speaker: 小雪
+        text: 对了，我在学做咖啡拉花，你能帮我看看这个像什么吗？
+
+      - type: minigame
+        game: quiz
+        question: 小雪做的拉花看起来像什么？
+        options:
+          - 爱心
+          - 猫
+          - 一坨云
+          - 不知道
+        correct: 1
+        success_affection: +10
+        fail_affection: -5
+
+      - background: bg_cafe
+        character: char_heroine_shy
+        speaker: 小雪
+        text: 嘿嘿，我还在练习中啦...不过你能看出来是猫就太好了！
+
+      - background: bg_cafe
+        character: char_heroine_normal
+        speaker: 小雪
+        text: 对了，这个给你，是我做的饼干，你尝尝看！
+
+      - type: evidence
+        id: homemade_cookie
+        name: 小雪的手工饼干
+        description: 小雪亲手做的饼干，形状有点歪，但闻起来很香。
+
+      - background: bg_cafe
+        character: char_heroine_happy
+        speaker: 小雪
+        text: 欢迎下次再来哦！我会等你的~
+
+      - background: bg_cafe
+        character: null
+        speaker: 旁白
+        text: 【第一章结束】
+
+
+  chapter2:
+    name: 第二章 - 约会
+
+    scenes:
+      - background: bg_park
+        character: null
+        speaker: 旁白
+        text: 周末，你收到了小雪的消息...
+
+      - background: bg_park
+        character: char_heroine_normal
+        speaker: 小雪
+        text: 今天天气真好！要不要一起去公园散步？
+
+      - type: choice
+        options:
+          - text: 好啊，我很期待！
+            affection: +10
+            goto: date_accept
+
+          - text: 我有点事...
+            affection: -10
+            goto: date_reject
+
+      - id: date_reject
+        background: bg_park
+        character: char_heroine_shy
+        speaker: 小雪
+        text: 这样啊...那下次吧...
+
+      - type: condition
+        check: affection >= 30
+        true_goto: reject_sad
+        false_goto: ending_bad
+
+      - id: reject_sad
+        background: bg_park
+        character: char_heroine_normal
+        speaker: 小雪
+        text: 没关系，我理解。我们还是朋友，对吧？
+        goto: ending_normal
+
+      - id: date_accept
+        background: bg_park
+        character: char_heroine_happy
+        speaker: 小雪
+        text: 太好了！我知道公园里有一个很漂亮的地方，跟我来！
+
+      - background: bg_park
+        character: null
+        speaker: 旁白
+        text: 你们来到了公园的一个小湖边，阳光洒在水面上，波光粼粼。
+
+      - background: bg_park
+        character: char_heroine_shy
+        speaker: 小雪
+        text: 其实...我有话想跟你说...
+
+      - type: choice
+        options:
+          - text: 我也有话想说
+            affection: +15
+            goto: confession_good
+
+          - text: 你说吧，我在听
+            affection: +5
+            goto: confession_normal
+
+          - text: （紧张地等待）
+            goto: confession_wait
+
+      - id: confession_good
+        background: bg_park
+        character: char_heroine_shy
+        speaker: 小雪
+        text: 我...我喜欢你！从第一次见面开始，我就觉得你很特别...
+        goto: check_ending
+
+      - id: confession_normal
+        background: bg_park
+        character: char_heroine_shy
+        speaker: 小雪
+        text: 我...我想说，和你在一起很开心。你愿意...继续做我的朋友吗？
+        goto: check_ending
+
+      - id: confession_wait
+        background: bg_park
+        character: char_heroine_normal
+        speaker: 小雪
+        text: 算了，没什么...今天天气真好呢。
+        goto: check_ending
+
+      - id: check_ending
+        type: condition
+        check: affection >= 50
+        true_goto: check_good
+        false_goto: check_normal
+
+      - id: check_good
+        type: condition
+        check: affection >= 80
+        true_goto: ending_good
+        false_goto: ending_normal
+
+      - id: check_normal
+        type: condition
+        check: affection >= 20
+        true_goto: ending_normal
+        false_goto: ending_bad
+
+      - id: ending_good
+        type: ending
+        ending: good
+
+      - id: ending_normal
+        type: ending
+        ending: normal
+
+      - id: ending_bad
+        type: ending
+        ending: bad
