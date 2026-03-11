@@ -1044,6 +1044,24 @@
       
       initCanvasPanning();
       initPanelToggles();
+      initKeyboardShortcuts();
+    }
+
+    function initKeyboardShortcuts() {
+      document.addEventListener('keydown', (e) => {
+        if (e.key !== 'Delete') return;
+        if (!state.selectedNode) return;
+
+        const target = e.target;
+        const tag = target && target.tagName ? String(target.tagName).toLowerCase() : '';
+        if (tag === 'input' || tag === 'textarea' || tag === 'select' || (target && target.isContentEditable)) return;
+
+        const modalOpen = Array.from(document.querySelectorAll('.modal-overlay')).some(m => !m.classList.contains('hidden'));
+        if (modalOpen) return;
+
+        e.preventDefault();
+        showDeleteNodeModal(state.selectedNode.id);
+      });
     }
 
     function initPanelToggles() {
