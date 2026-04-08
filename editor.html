@@ -944,7 +944,8 @@
   </div>
   
   <div class="modal-overlay hidden" id="assetModal">
-    <div class="modal modal-wide">
+    <div class="modal modal-wide" style="position:relative;">
+      <div class="close-btn" style="position:absolute; top:10px; right:15px;" onclick="hideAssetModal()">×</div>
       <h2>资源库（本地 Demo）</h2>
       <p>上传角色/背景/道具图片，节点属性可直接从资源库选择。</p>
       
@@ -971,7 +972,6 @@
           
           <div class="modal-buttons" style="justify-content:flex-start;">
             <button class="btn btn-add" onclick="uploadAsset()">上传</button>
-            <button class="btn btn-back" onclick="hideAssetModal()">关闭</button>
           </div>
           
           <div class="help-text" style="margin-top:10px;">
