@@ -1333,6 +1333,7 @@
     function escapeHtml(str) { return String(str).replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;').replaceAll("'", '&#39;'); }
     function getBuiltinAssets() {
       return [
+        { id: 'bg_nanjing_street', type: 'background', name: '南京街道（内置）', builtin: true },
         { id: 'bg_street', type: 'background', name: '街道（内置）', builtin: true },
         { id: 'bg_cafe', type: 'background', name: '咖啡店（内置）', builtin: true },
         { id: 'bg_park', type: 'background', name: '公园（内置）', builtin: true },
@@ -1356,7 +1357,7 @@
     
     // ... [Reuse Option Builders] ...
     function buildBackgroundOptions(selected) {
-      const builtin = [{ value: 'bg_street', label: '街道（内置）' }, { value: 'bg_cafe', label: '咖啡店（内置）' }, { value: 'bg_park', label: '公园（内置）' }];
+      const builtin = [{ value: 'bg_nanjing_street', label: '南京街道（内置）' }, { value: 'bg_street', label: '街道（内置）' }, { value: 'bg_cafe', label: '咖啡店（内置）' }, { value: 'bg_park', label: '公园（内置）' }];
       const custom = getCustomAssetsByType('background').map(a => ({ value: a.id, label: `${a.name}（资源库）` }));
       return `<optgroup label="内置背景">${builtin.map(o => `<option value="${o.value}" ${selected === o.value ? 'selected' : ''}>${o.label}</option>`).join('')}</optgroup>` + 
              `<optgroup label="资源库背景">${custom.map(o => `<option value="${o.value}" ${selected === o.value ? 'selected' : ''}>${escapeHtml(o.label)}</option>`).join('')}</optgroup>`;

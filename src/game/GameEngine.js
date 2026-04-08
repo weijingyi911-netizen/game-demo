@@ -309,6 +309,7 @@ export class GameEngine {
       return
     }
     const backgrounds = {
+      bg_nanjing_street: '/assets/bg_nanjing.jpg',
       bg_street: 'https://placehold.co/1280x720/6c5ce7/ffffff?text=Street',
       bg_cafe: 'https://placehold.co/1280x720/2d3436/ffffff?text=Cafe',
       bg_park: 'https://placehold.co/1280x720/00b894/ffffff?text=Park',
