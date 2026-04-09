@@ -61,18 +61,17 @@
       width: 100%;
       height: 100%;
       z-index: 2;
-      display: flex;
-      justify-content: flex-end;
-      align-items: flex-end;
-      padding-bottom: 220px;
-      padding-right: 100px;
+      pointer-events: none;
     }
 
     #character-layer img {
+      position: absolute;
+      bottom: 220px;
       max-height: 500px;
       max-width: 300px;
       object-fit: contain;
-      transition: opacity 0.3s ease;
+      transition: all 0.3s ease;
+      pointer-events: auto;
     }
 
     #ui-layer {
