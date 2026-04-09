@@ -229,7 +229,13 @@ export class GameEngine {
   renderChoice(node) {
     const data = node.data
     
-    this.setBackground(data.background || null)
+    if (data.background) {
+      this.setBackground(data.background)
+    }
+    if (data.character) {
+      this.setCharacter(data.character)
+    }
+    
     this.setSpeaker('选择')
     this.setText('请做出你的选择...')
     
