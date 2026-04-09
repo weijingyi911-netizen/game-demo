@@ -220,7 +220,7 @@ export class GameEngine {
     const data = node.data
     
     this.setBackground(data.background)
-    this.setCharacter(data.character, data.characterPosition)
+    this.setCharacter(data.character, data.characterPosition, data.characterSize)
     this.setSpeaker(data.speaker)
     this.setText(data.text)
     this.showDialogueBox()
@@ -233,7 +233,7 @@ export class GameEngine {
       this.setBackground(data.background)
     }
     if (data.character) {
-      this.setCharacter(data.character, data.characterPosition)
+      this.setCharacter(data.character, data.characterPosition, data.characterSize)
     }
     
     this.setSpeaker('选择')
@@ -345,7 +345,7 @@ export class GameEngine {
     this.elements.background.src = url
   }
 
-  setCharacter(characterId, position) {
+  setCharacter(characterId, position, size) {
     const characters = {
       char_heroine_normal: 'https://placehold.co/300x500/e17055/ffffff?text=Heroine',
       char_heroine_happy: 'https://placehold.co/300x500/00b894/ffffff?text=Happy',
@@ -357,6 +357,18 @@ export class GameEngine {
       const url = asset && asset.type === 'character' && (asset.url || asset.dataUrl) ? (asset.url || asset.dataUrl) : (characters[characterId] || characters.char_heroine_normal)
       this.elements.character.src = url
       this.elements.character.style.display = 'block'
+      
+      // Update character size
+      const s = size || this.currentCharacterSize || 'large'
+      this.currentCharacterSize = s
+      const sizeMap = {
+        'large': { h: '500px', w: '300px' },
+        'medium': { h: '400px', w: '240px' },
+        'small': { h: '300px', w: '180px' }
+      }
+      const dims = sizeMap[s] || sizeMap['large']
+      this.elements.character.style.maxHeight = dims.h
+      this.elements.character.style.maxWidth = dims.w
       
       // Update character position
       const pos = position || this.currentCharacterPosition || 'center'
