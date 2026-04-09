@@ -299,12 +299,31 @@ export class GameEngine {
     if (choice.affection) {
       this.state.affection += choice.affection
       this.updateAffectionUI()
+      this.showAffectionPopup(choice.affection)
     }
     
     this.hideChoices()
     
     if (choice.goto) {
       this.goToNode(choice.goto)
+    }
+  }
+
+  showAffectionPopup(value) {
+    const popup = this.elements.affectionPopup
+    if (!popup) return
+
+    // Reset animation by removing the class and triggering a reflow
+    popup.classList.remove('show')
+    void popup.offsetWidth
+
+    if (value > 0) {
+      popup.textContent = '+' + value
+      popup.className = 'positive show'
+    } else {
+      // value is already negative, e.g., "-5"
+      popup.textContent = value
+      popup.className = 'negative show'
     }
   }
 

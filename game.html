@@ -421,6 +421,47 @@
     .hidden {
       display: none !important;
     }
+
+    #affection-popup {
+      position: absolute;
+      top: 40%;
+      left: 50%;
+      transform: translate(-50%, -50%) scale(0);
+      font-size: 100px;
+      font-family: var(--sdv-font-family);
+      font-weight: bold;
+      pointer-events: none;
+      z-index: 1000;
+      opacity: 0;
+      /* Thick black pixel-style border */
+      text-shadow:
+        -4px -4px 0 #000, 4px -4px 0 #000, -4px 4px 0 #000, 4px 4px 0 #000,
+        -6px 0 0 #000, 6px 0 0 #000, 0 -6px 0 #000, 0 6px 0 #000;
+    }
+
+    #affection-popup.positive {
+      color: #55efc4;
+    }
+
+    #affection-popup.negative {
+      color: #ff6b6b;
+    }
+
+    #affection-popup.show {
+      animation: popup-shake 1.5s cubic-bezier(.36,.07,.19,.97) forwards;
+    }
+
+    @keyframes popup-shake {
+      0% { transform: translate(-50%, -50%) scale(0); opacity: 0; }
+      10% { transform: translate(-50%, -50%) scale(1.2); opacity: 1; }
+      15% { transform: translate(-55%, -45%) scale(1.2); }
+      20% { transform: translate(-45%, -55%) scale(1.2); }
+      25% { transform: translate(-55%, -55%) scale(1.2); }
+      30% { transform: translate(-45%, -45%) scale(1.2); }
+      35% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+      70% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+      100% { transform: translate(-50%, -100%) scale(1); opacity: 0; }
+    }
   </style>
 </head>
 <body>
@@ -475,6 +516,8 @@
       <button id="restart-btn">重新开始</button>
     </div>
 
+    <div id="affection-popup"></div>
+
     <div id="message-toast"></div>
   </div>
 
@@ -499,6 +542,7 @@
         choiceContainer: document.getElementById('choice-container'),
         affectionBar: document.getElementById('affection-bar'),
         affectionValue: document.getElementById('affection-value'),
+        affectionPopup: document.getElementById('affection-popup'),
         menuOverlay: document.getElementById('menu-overlay'),
         endingOverlay: document.getElementById('ending-overlay'),
         endingTitle: document.getElementById('ending-title'),
