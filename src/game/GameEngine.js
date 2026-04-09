@@ -358,31 +358,27 @@ export class GameEngine {
       this.elements.character.src = url
       this.elements.character.style.display = 'block'
       
-      // Update character size
+      // Calculate base scale from size
       const s = size || this.currentCharacterSize || 'large'
       this.currentCharacterSize = s
-      const sizeMap = {
-        'large': { h: '500px', w: '300px' },
-        'medium': { h: '400px', w: '240px' },
-        'small': { h: '300px', w: '180px' }
-      }
-      const dims = sizeMap[s] || sizeMap['large']
-      this.elements.character.style.maxHeight = dims.h
-      this.elements.character.style.maxWidth = dims.w
       
-      // Update character position
+      let baseScale = 1;
+      if (s === 'medium') baseScale = 0.8;
+      if (s === 'small') baseScale = 0.6;
+      
+      // Update character position & apply scale
       const pos = position || this.currentCharacterPosition || 'center'
       this.currentCharacterPosition = pos
       
       if (pos === 'left') {
         this.elements.character.style.left = '15%'
-        this.elements.character.style.transform = 'none'
+        this.elements.character.style.transform = `scale(${baseScale})`
       } else if (pos === 'right') {
         this.elements.character.style.left = '85%'
-        this.elements.character.style.transform = 'translateX(-100%)'
+        this.elements.character.style.transform = `translateX(-100%) scale(${baseScale})`
       } else { // center
         this.elements.character.style.left = '50%'
-        this.elements.character.style.transform = 'translateX(-50%)'
+        this.elements.character.style.transform = `translateX(-50%) scale(${baseScale})`
       }
     } else {
       this.elements.character.style.display = 'none'

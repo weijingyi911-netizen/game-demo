@@ -67,11 +67,11 @@
     #character-layer img {
       position: absolute;
       bottom: 220px;
-      max-height: 500px;
-      max-width: 300px;
+      height: 70%; /* Base height relative to screen */
       object-fit: contain;
       transition: all 0.3s ease;
       pointer-events: auto;
+      transform-origin: bottom center;
     }
 
     #ui-layer {
