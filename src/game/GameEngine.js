@@ -5,7 +5,7 @@ export class GameEngine {
     this.elements = config.elements
     
     this.state = {
-      affection: 0,
+      affection: 50,
       currentNodeId: null,
       flags: {},
       evidences: []
@@ -386,7 +386,8 @@ export class GameEngine {
 
   updateAffectionUI() {
     const maxAffection = 100
-    const percentage = Math.min(100, Math.max(0, (this.state.affection / maxAffection) * 100))
+    this.state.affection = Math.min(maxAffection, Math.max(0, this.state.affection))
+    const percentage = (this.state.affection / maxAffection) * 100
     this.elements.affectionBar.style.width = percentage + '%'
     this.elements.affectionValue.textContent = this.state.affection
   }
