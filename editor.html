@@ -1498,13 +1498,61 @@
     
     function addNode(type) {
       if (!state.currentChapterId) { alert('请先选择一个章节'); return; }
-      const node = { id: type + '_' + (state.nodeIdCounter++), type: type, x: 100 + Math.random() * 200, y: 150 + Math.random() * 200, data: getDefaultNodeData(type) };
+      
+      let x = -state.canvasX + 100 + Math.random() * 50;
+      let y = -state.canvasY + 150 + Math.random() * 50;
+      const prevNode = state.selectedNode;
+      
+      if (prevNode) {
+        x = prevNode.x + 320;
+        y = prevNode.y;
+      }
+      
+      const node = { id: type + '_' + (state.nodeIdCounter++), type: type, x: x, y: y, data: getDefaultNodeData(type) };
+      
+      // Inherit background and character from previous node if applicable
+      if (prevNode && (node.type === 'dialogue' || node.type === 'choice')) {
+        if (prevNode.data.background) node.data.background = prevNode.data.background;
+        if (prevNode.data.character) node.data.character = prevNode.data.character;
+        if (prevNode.data.characterPosition) node.data.characterPosition = prevNode.data.characterPosition;
+      }
+      
       const nodes = getCurrentNodes();
       nodes.push(node);
       setCurrentNodes(nodes);
+      
       const chapter = state.chapters.find(c => c.id === state.currentChapterId);
       if (!chapter.startNode) chapter.startNode = node.id;
+      
+      // Auto connect to previous node
+      let shouldUpdatePrev = false;
+      if (prevNode) {
+        if (prevNode.type === 'dialogue' && !prevNode.data.goto) {
+          prevNode.data.goto = node.id;
+          shouldUpdatePrev = true;
+        } else if (prevNode.type === 'condition') {
+          if (!prevNode.data.trueGoto) {
+            prevNode.data.trueGoto = node.id;
+            shouldUpdatePrev = true;
+          } else if (!prevNode.data.falseGoto) {
+            prevNode.data.falseGoto = node.id;
+            shouldUpdatePrev = true;
+          }
+        } else if (prevNode.type === 'choice') {
+          const emptyChoice = prevNode.data.choices.find(c => !c.goto);
+          if (emptyChoice) {
+            emptyChoice.goto = node.id;
+            shouldUpdatePrev = true;
+          }
+        }
+      }
+      
       renderNode(node);
+      if (shouldUpdatePrev) {
+        updateNodePreview(prevNode);
+        updateConnections();
+      }
+      
       selectNode(node.id);
       saveData();
       updateChapterInfo();
