@@ -1961,7 +1961,51 @@
       updateConnections(); scheduleSave();
     }
 
-    function updateNodeData(key, value) { if (state.selectedNode) { state.selectedNode.data[key] = value; updateNodePreview(state.selectedNode); updateConnections(); scheduleSave(); } }
+    function updateNodeData(key, value) {
+      if (!state.selectedNode) return;
+      
+      state.selectedNode.data[key] = value;
+      let needsPanelRender = false;
+
+      // Auto mapping between character and speaker
+      if (key === 'character') {
+        if (value !== 'null' && value !== 'char_none') {
+          const asset = getAllAssets().find(a => a.id === value);
+          if (asset && asset.name) {
+            // Extract base name, e.g., "小雪-默认（内置）" -> "小雪"
+            const baseName = String(asset.name).split(/[-_（(]/)[0].trim();
+            if (baseName && state.selectedNode.data.speaker !== baseName) {
+              state.selectedNode.data.speaker = baseName;
+              needsPanelRender = true;
+            }
+          }
+        }
+      } else if (key === 'speaker') {
+        if (value === '旁白' || value === '???') {
+          if (state.selectedNode.data.character !== 'null') {
+            state.selectedNode.data.character = 'null';
+            needsPanelRender = true;
+          }
+        } else if (value) {
+          // If a speaker is selected and no character is set, try to auto-select a matching character
+          if (!state.selectedNode.data.character || state.selectedNode.data.character === 'null') {
+            const matchedAsset = getAllAssets().find(a => a.type === 'character' && String(a.name).startsWith(value));
+            if (matchedAsset) {
+              state.selectedNode.data.character = matchedAsset.id;
+              needsPanelRender = true;
+            }
+          }
+        }
+      }
+
+      updateNodePreview(state.selectedNode);
+      updateConnections();
+      scheduleSave();
+      
+      if (needsPanelRender) {
+        renderPropertyPanel(state.selectedNode);
+      }
+    }
     function updateChoice(index, key, value) { if (state.selectedNode && state.selectedNode.data.choices) { state.selectedNode.data.choices[index][key] = value; updateConnections(); scheduleSave(); } }
     function addChoice() { if (state.selectedNode && state.selectedNode.data.choices) { state.selectedNode.data.choices.push({ text: '新选项', affection: 0, goto: null }); renderPropertyPanel(state.selectedNode); updateNodePreview(state.selectedNode); scheduleSave(); } }
     function updateNodePreview(node) { const el = document.getElementById(node.id); if (el) el.querySelector('.node-content').textContent = getNodePreview(node); }
