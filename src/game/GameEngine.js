@@ -220,7 +220,7 @@ export class GameEngine {
     const data = node.data
     
     this.setBackground(data.background)
-    this.setCharacter(data.character)
+    this.setCharacter(data.character, data.characterPosition)
     this.setSpeaker(data.speaker)
     this.setText(data.text)
     this.showDialogueBox()
@@ -233,7 +233,7 @@ export class GameEngine {
       this.setBackground(data.background)
     }
     if (data.character) {
-      this.setCharacter(data.character)
+      this.setCharacter(data.character, data.characterPosition)
     }
     
     this.setSpeaker('选择')
@@ -326,7 +326,7 @@ export class GameEngine {
     this.elements.background.src = url
   }
 
-  setCharacter(characterId) {
+  setCharacter(characterId, position) {
     const characters = {
       char_heroine_normal: 'https://placehold.co/300x500/e17055/ffffff?text=Heroine',
       char_heroine_happy: 'https://placehold.co/300x500/00b894/ffffff?text=Happy',
@@ -338,6 +338,21 @@ export class GameEngine {
       const url = asset && asset.type === 'character' && (asset.url || asset.dataUrl) ? (asset.url || asset.dataUrl) : (characters[characterId] || characters.char_heroine_normal)
       this.elements.character.src = url
       this.elements.character.style.display = 'block'
+      
+      // Update character position
+      const pos = position || this.currentCharacterPosition || 'center'
+      this.currentCharacterPosition = pos
+      
+      if (pos === 'left') {
+        this.elements.character.style.left = '15%'
+        this.elements.character.style.transform = 'none'
+      } else if (pos === 'right') {
+        this.elements.character.style.left = '85%'
+        this.elements.character.style.transform = 'translateX(-100%)'
+      } else { // center
+        this.elements.character.style.left = '50%'
+        this.elements.character.style.transform = 'translateX(-50%)'
+      }
     } else {
       this.elements.character.style.display = 'none'
     }

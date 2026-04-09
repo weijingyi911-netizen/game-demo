@@ -1513,7 +1513,7 @@
     
     function getDefaultNodeData(type) {
       switch(type) {
-        case 'dialogue': return { speaker: '旁白', text: '', background: 'bg_street', character: 'char_heroine_normal', goto: null };
+        case 'dialogue': return { speaker: '旁白', text: '', background: 'bg_street', character: 'char_heroine_normal', characterPosition: 'center', goto: null };
         case 'choice': return { choices: [{ text: '选项1', affection: 0, goto: null }, { text: '选项2', affection: 0, goto: null }] };
         case 'condition': return { conditionType: 'affection', conditionValue: 50, trueGoto: null, falseGoto: null };
         case 'ending': return { endingType: 'normal' };
@@ -1837,6 +1837,7 @@
             <div class="property-section"><div class="property-label">对话内容：</div><textarea class="property-textarea" oninput="updateNodeData('text', this.value)">${node.data.text}</textarea></div>
             <div class="property-section"><div class="property-label">背景图片：</div><div class="goto-selector"><select class="property-select" onchange="updateNodeData('background', this.value)">${buildBackgroundOptions(node.data.background)}</select><button class="btn btn-connect" onclick="showAssetModal('background')">资源</button></div></div>
             <div class="property-section"><div class="property-label">角色立绘：</div><div class="goto-selector"><select class="property-select" onchange="updateNodeData('character', this.value)">${buildCharacterOptions(node.data.character)}</select><button class="btn btn-connect" onclick="showAssetModal('character')">资源</button></div></div>
+            <div class="property-section"><div class="property-label">角色位置：</div><select class="property-select" onchange="updateNodeData('characterPosition', this.value)"><option value="left" ${node.data.characterPosition === 'left' ? 'selected' : ''}>左侧</option><option value="center" ${(!node.data.characterPosition || node.data.characterPosition === 'center') ? 'selected' : ''}>居中</option><option value="right" ${node.data.characterPosition === 'right' ? 'selected' : ''}>右侧</option></select></div>
             <div class="property-section"><div class="property-label">下一个节点：</div><div class="goto-selector"><select class="property-select" onchange="updateNodeData('goto', this.value)"><option value="">-- 无 --</option>${nodes.filter(n => n.id !== node.id).map(n => `<option value="${n.id}" ${node.data.goto === n.id ? 'selected' : ''}>${n.id} (${n.type})</option>`).join('')}</select><button class="btn btn-connect" onclick="startConnection('${node.id}', null)">连接</button></div></div>
           `;
           break;
